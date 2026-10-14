@@ -1,5 +1,4 @@
 import pytest
-from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.db import IntegrityError
 
@@ -17,11 +16,6 @@ from game.models import (
 from game.seed_data import build_cards, build_cells
 
 pytestmark = pytest.mark.django_db
-
-
-@pytest.fixture
-def host():
-    return get_user_model().objects.create_superuser("host", password="x")
 
 
 def test_game_gets_readable_code(host):

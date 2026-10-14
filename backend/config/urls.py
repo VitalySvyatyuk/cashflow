@@ -8,4 +8,5 @@ admin.site.index_title = "Управление игрой"
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", include("core.urls")),
+    path("api/", include("game.urls")),
 ]

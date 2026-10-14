@@ -31,6 +31,23 @@ make down        # остановить
 Порты открыты только на `127.0.0.1`: backend — 8000, Postgres — 5433
 (5432 часто занят локальным Postgres), Redis — 6379.
 
+## API лобби
+
+| Метод | Путь | Кто | Что делает |
+|---|---|---|---|
+| GET | `/api/auth/session/` | все | текущий пользователь + cookie `csrftoken` |
+| POST | `/api/auth/login/` | все | вход ведущего `{username, password}` |
+| POST | `/api/auth/logout/` | все | выход |
+| GET / POST | `/api/games/` | ведущий | свои игры / создать `{max_players}` |
+| GET | `/api/games/<код>/` | все | игра и список игроков |
+| POST | `/api/games/<код>/join/` | все | войти `{name}` → `token` |
+| GET / DELETE | `/api/games/<код>/me/` | игрок | о себе / выйти из лобби |
+| DELETE | `/api/games/<код>/players/<id>/` | ведущий | убрать игрока из лобби |
+| POST | `/api/games/<код>/start/` | ведущий | старт: профессии, колоды, первый ход |
+
+Ведущий авторизуется сессией (POST-запросы — с заголовком `X-CSRFToken`),
+игрок — заголовком `X-Player-Token: <token>`.
+
 ## Тесты и линтер
 
 Тесты запускаются локально, в `.venv`, против Postgres и Redis из Docker:
