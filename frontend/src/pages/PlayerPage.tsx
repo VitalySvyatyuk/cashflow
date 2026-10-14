@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Link, Navigate, useParams } from "react-router";
 
 import { CLOSE_FORBIDDEN, CLOSE_GAME_NOT_FOUND, CLOSE_REMOVED } from "../api/socket";
-import { BoardPlaceholder } from "../components/BoardPlaceholder";
+import { Board } from "../components/board/Board";
 import { CardView } from "../components/CardView";
 import { ConnectionBadge } from "../components/ConnectionBadge";
 import { EventLog } from "../components/EventLog";
@@ -80,8 +80,10 @@ export function PlayerPage() {
         <FinanceCard player={me} />
       </aside>
       <main className="board-area">
-        <BoardPlaceholder state={state} />
-        {state.current_card && <CardView card={state.current_card} />}
+        <Board state={state} meId={me.id}>
+          {state.dice.length > 0 && <div className="dice">🎲 {state.dice.join(" + ")}</div>}
+          {state.current_card && <CardView card={state.current_card} />}
+        </Board>
         {state.status === "finished" && (
           <div className="winner">
             🏆 Победитель: {state.players.find((p) => p.id === state.winner_id)?.name}

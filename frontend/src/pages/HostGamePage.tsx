@@ -3,7 +3,7 @@ import { Link, Navigate, useParams } from "react-router";
 
 import { api } from "../api/http";
 import type { GameState } from "../api/types";
-import { BoardPlaceholder } from "../components/BoardPlaceholder";
+import { Board } from "../components/board/Board";
 import { CardView } from "../components/CardView";
 import { ConnectionBadge } from "../components/ConnectionBadge";
 import { EventLog } from "../components/EventLog";
@@ -117,8 +117,10 @@ function HostGame({ state }: { state: GameState }) {
         </table>
       </aside>
       <main className="board-area">
-        <BoardPlaceholder state={state} />
-        {state.current_card && <CardView card={state.current_card} />}
+        <Board state={state} meId={null}>
+          {state.dice.length > 0 && <div className="dice">🎲 {state.dice.join(" + ")}</div>}
+          {state.current_card && <CardView card={state.current_card} />}
+        </Board>
       </main>
       <aside className="right">
         <h2>Заявки</h2>

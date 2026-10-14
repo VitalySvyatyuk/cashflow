@@ -299,9 +299,7 @@ select {
 }
 
 .card {
-  position: absolute;
-  bottom: 24px;
-  width: 320px;
+  width: min(100%, 300px);
   background: var(--panel);
   border: 3px solid;
   border-radius: var(--radius);
@@ -319,22 +317,108 @@ select {
   margin: 12px;
 }
 
-.board-placeholder {
-  border: 2px dashed var(--border);
-  border-radius: 50%;
-  width: min(70vh, 90%);
+/* Игровое поле: квадрат, вписанный в центральную область */
+.game-layout > .board-area {
+  padding: 12px;
+}
+.board {
+  position: relative;
+  height: 100%;
+  max-width: 100%;
   aspect-ratio: 1;
+}
+.board svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.board .cell {
+  stroke: var(--bg);
+  stroke-width: 3;
+}
+.board .cell:hover {
+  filter: brightness(1.15);
+}
+.board-center {
+  fill: var(--panel);
+  stroke: var(--border);
+  stroke-width: 2;
+}
+.board-title {
+  text-anchor: middle;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  fill: var(--muted);
+  opacity: 0.35;
+}
+.token {
+  stroke: #fff;
+  stroke-width: 3;
+  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.45));
+}
+.token-me {
+  stroke: #111;
+}
+.token-label {
+  text-anchor: middle;
+  font-size: 15px;
+  font-weight: 700;
+  pointer-events: none;
+}
+/* Центр поля (внутри крысиных бегов) — для кубиков и карточки */
+.board-middle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46%;
+  height: 46%;
+  transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: var(--muted);
-  gap: 8px;
+  gap: 10px;
+  pointer-events: none;
 }
-.board-placeholder ul {
+.board-middle > * {
+  pointer-events: auto;
+}
+.board-loading {
+  color: var(--muted);
+}
+.landing {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--panel);
+  border: 3px solid;
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  max-width: 70%;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.18);
+  animation: landing-in 0.25s ease-out;
+}
+@keyframes landing-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+}
+.legend {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  font-size: 0.85em;
+  background: var(--panel);
+  border-radius: 8px;
+  padding: 4px 6px;
+}
+.legend ul {
   list-style: none;
+  margin: 6px 0 0;
   padding: 0;
-  font-size: 0.9em;
 }
 .dice {
   font-size: 1.5rem;
