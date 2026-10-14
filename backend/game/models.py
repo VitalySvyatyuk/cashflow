@@ -2,7 +2,11 @@ import secrets
 import uuid
 
 from django.conf import settings
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import (
+    FileExtensionValidator,
+    MaxValueValidator,
+    MinValueValidator,
+)
 from django.db import models
 
 MAX_PLAYERS = 6
@@ -34,6 +38,15 @@ class Profession(models.Model):
     savings = models.PositiveIntegerField("сбережения")
     # [{"title": "Ипотека", "balance": 75000, "payment": 700}, ...]
     liabilities = models.JSONField("пассивы", default=list, blank=True)
+    emoji = models.CharField("эмодзи", max_length=16, blank=True, help_text="Например 👩‍🏫")
+    icon = models.FileField(
+        "картинка",
+        upload_to="professions/",
+        blank=True,
+        # SVG не принимаем: в нём может быть скрипт.
+        validators=[FileExtensionValidator(["png", "jpg", "jpeg", "webp"])],
+        help_text="PNG, JPG или WEBP, лучше квадратная. Если есть — показывается вместо эмодзи.",
+    )
 
     class Meta:
         verbose_name = "профессия"

@@ -5,10 +5,11 @@ from game.models import MAX_PLAYERS, Game, Liability, Player
 
 class PublicPlayerSerializer(serializers.ModelSerializer):
     profession = serializers.CharField(source="profession.name", default=None)
+    profession_emoji = serializers.CharField(source="profession.emoji", default="")
 
     class Meta:
         model = Player
-        fields = ["id", "name", "seat", "color", "profession"]
+        fields = ["id", "name", "seat", "color", "profession", "profession_emoji"]
 
 
 class LiabilitySerializer(serializers.ModelSerializer):

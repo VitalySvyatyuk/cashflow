@@ -1,6 +1,7 @@
 import type { GameState } from "../api/types";
 import { money } from "../lib/format";
 import { useGame } from "../store/game";
+import { ProfessionIcon } from "./ProfessionIcon";
 
 export function PlayerList({
   state,
@@ -28,7 +29,7 @@ export function PlayerList({
             title={online(p.id) ? "в сети" : "не в сети"}
           />
           <span className="name">
-            {p.name}
+            <ProfessionIcon profession={p.profession} size={18} /> {p.name}
             {p.id === meId && " (вы)"}
           </span>
           {state.status !== "lobby" && <span className="cash">{money(p.cash)}</span>}

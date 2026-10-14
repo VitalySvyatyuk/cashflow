@@ -863,3 +863,10 @@ ul.plain {
     padding: 4px 2px;
   }
 }
+
+.profession-icon {
+  display: inline-block;
+  vertical-align: middle;
+  object-fit: contain;
+  line-height: 1;
+}

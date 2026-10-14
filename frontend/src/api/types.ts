@@ -23,6 +23,9 @@ export interface Statement {
 
 export interface Profession {
   name: string;
+  emoji: string;
+  /** Картинка из админки; если нет — показываем эмодзи */
+  icon: string | null;
   salary: number;
   taxes: number;
   other_expenses: number;
@@ -125,6 +128,7 @@ export interface LobbyPlayer {
   seat: number;
   color: string;
   profession: string | null;
+  profession_emoji: string;
 }
 
 export interface LobbyGame {

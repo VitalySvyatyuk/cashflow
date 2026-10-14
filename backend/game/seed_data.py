@@ -48,6 +48,7 @@ def _liabilities(mortgage, school, car, cards, retail):
 PROFESSIONS = [
     {
         "name": "Учитель",
+        "emoji": "👩‍🏫",
         "salary": 3300,
         "taxes": 630,
         "other_expenses": 760,
@@ -57,6 +58,7 @@ PROFESSIONS = [
     },
     {
         "name": "Инженер",
+        "emoji": "👷",
         "salary": 4900,
         "taxes": 1050,
         "other_expenses": 1090,
@@ -68,6 +70,7 @@ PROFESSIONS = [
     },
     {
         "name": "Врач",
+        "emoji": "👨‍⚕️",
         "salary": 13200,
         "taxes": 3420,
         "other_expenses": 2880,
@@ -79,6 +82,7 @@ PROFESSIONS = [
     },
     {
         "name": "Медсестра",
+        "emoji": "👩‍⚕️",
         "salary": 3100,
         "taxes": 600,
         "other_expenses": 710,
@@ -88,6 +92,7 @@ PROFESSIONS = [
     },
     {
         "name": "Полицейский",
+        "emoji": "👮",
         "salary": 3000,
         "taxes": 580,
         "other_expenses": 690,
@@ -97,6 +102,7 @@ PROFESSIONS = [
     },
     {
         "name": "Секретарь",
+        "emoji": "🗂️",
         "salary": 2500,
         "taxes": 460,
         "other_expenses": 570,
@@ -106,6 +112,7 @@ PROFESSIONS = [
     },
     {
         "name": "Менеджер",
+        "emoji": "💼",
         "salary": 4600,
         "taxes": 910,
         "other_expenses": 1000,
@@ -115,6 +122,7 @@ PROFESSIONS = [
     },
     {
         "name": "Пилот",
+        "emoji": "✈️",
         "salary": 9500,
         "taxes": 2350,
         "other_expenses": 2210,

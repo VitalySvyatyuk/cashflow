@@ -104,3 +104,27 @@ def test_new_code_avoids_active_games(host, monkeypatch):
     codes = iter(["1111", "2222"])
     monkeypatch.setattr("game.models.generate_game_code", lambda: next(codes))
     assert Game.objects.create(host=host).code == "2222"
+
+
+def test_profession_icon_rejects_svg():
+    from django.core.exceptions import ValidationError
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    profession = Profession(
+        name="Тест", salary=1, taxes=0, other_expenses=0, per_child_expense=0, savings=0
+    )
+    profession.icon = SimpleUploadedFile("x.svg", b"<svg onload='alert(1)'/>")
+    with pytest.raises(ValidationError):
+        profession.full_clean()
+
+
+def test_state_includes_profession_icon(host, seeded):
+    from game import lobby
+    from game.state import build_state
+
+    game = lobby.create_game(host, 1)
+    lobby.join_game(game, "Маша")
+    lobby.start_game(game)
+    profession = build_state(game.id)["players"][0]["profession"]
+    assert profession["emoji"]
+    assert profession["icon"] is None

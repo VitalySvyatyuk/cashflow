@@ -13,6 +13,7 @@ import { useGameSounds } from "../lib/useGameSounds";
 import { ConnectionBadge } from "../components/ConnectionBadge";
 import { EventLog } from "../components/EventLog";
 import { PlayerActions } from "../components/PlayerActions";
+import { ProfessionIcon } from "../components/ProfessionIcon";
 import { ApprovalQueue, HostControls } from "../components/HostPanel";
 import { Toast } from "../components/Toast";
 import { money } from "../lib/format";
@@ -134,7 +135,9 @@ function HostGame({ state }: { state: GameState }) {
                     title={presence?.players.includes(p.id) ? "в сети" : "не в сети"}
                   />{" "}
                   {p.name}
-                  <div className="muted small">{p.profession?.name}</div>
+                  <div className="muted small">
+                    <ProfessionIcon profession={p.profession} size={14} /> {p.profession?.name}
+                  </div>
                 </td>
                 <td>{money(p.cash)}</td>
                 <td className={p.statement.cashflow < 0 ? "negative" : ""}>{money(p.statement.cashflow)}</td>

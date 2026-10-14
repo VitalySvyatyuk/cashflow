@@ -14,6 +14,7 @@ export default defineConfig({
       "/api": { target: backend },
       "/admin": { target: backend },
       "/static": { target: backend },
+      "/media": { target: backend },
       "/ws": { target: backend, ws: true },
     },
   },

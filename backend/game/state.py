@@ -55,6 +55,8 @@ class PlayerStateSerializer(serializers.ModelSerializer):
             return None
         return {
             "name": p.name,
+            "emoji": p.emoji,
+            "icon": p.icon.url if p.icon else None,
             "salary": p.salary,
             "taxes": p.taxes,
             "other_expenses": p.other_expenses,

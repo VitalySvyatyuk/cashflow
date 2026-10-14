@@ -27,9 +27,31 @@ def color_swatch(obj):
 color_swatch.short_description = "цвет"
 
 
+@admin.display(description="иконка")
+def profession_icon(obj):
+    if obj.icon:
+        return format_html(
+            '<img src="{}" style="width:32px;height:32px;object-fit:contain">', obj.icon.url
+        )
+    return format_html('<span style="font-size:24px">{}</span>', obj.emoji or "—")
+
+
 @admin.register(Profession)
 class ProfessionAdmin(admin.ModelAdmin):
-    list_display = ["name", "salary", "taxes", "other_expenses", "savings"]
+    list_display = [profession_icon, "name", "salary", "taxes", "other_expenses", "savings"]
+    list_display_links = [profession_icon, "name"]
+    readonly_fields = [profession_icon]
+    fields = [
+        "name",
+        ("emoji", "icon"),
+        profession_icon,
+        "salary",
+        "taxes",
+        "other_expenses",
+        "per_child_expense",
+        "savings",
+        "liabilities",
+    ]
 
 
 @admin.register(Card)

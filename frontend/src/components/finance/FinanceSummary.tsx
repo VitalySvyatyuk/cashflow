@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { PlayerState } from "../../api/types";
 import { money } from "../../lib/format";
 import { Modal } from "../Modal";
+import { ProfessionIcon } from "../ProfessionIcon";
 import { FinanceSheet, assetLabel } from "./FinanceSheet";
 
 /** Левая панель игрока: главное о деньгах и путь к выходу из крысиных бегов. */
@@ -13,7 +14,10 @@ export function FinanceSummary({ player }: { player: PlayerState }) {
 
   return (
     <div className="finance">
-      <h2>{player.profession?.name ?? "Без профессии"}</h2>
+      <h2 className="row">
+        <ProfessionIcon profession={player.profession} size={28} />
+        {player.profession?.name ?? "Без профессии"}
+      </h2>
       <div className="cash">
         <span className="muted">Наличные</span>
         <b>{money(player.cash)}</b>
