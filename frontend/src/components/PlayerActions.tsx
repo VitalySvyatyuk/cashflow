@@ -1,17 +1,27 @@
 import { useState } from "react";
 
 import type { GameState, PlayerState } from "../api/types";
+import { money } from "../lib/format";
 import { useGame } from "../store/game";
 
 /** Кнопки по фазе хода. Подробная работа с карточками — на шаге 10. */
-export function PlayerActions({ state, me }: { state: GameState; me: PlayerState }) {
+export function PlayerActions({
+  state,
+  me,
+  busy = false,
+}: {
+  state: GameState;
+  me: PlayerState;
+  /** Фишка ещё идёт — ждём, пока экран догонит сервер. */
+  busy?: boolean;
+}) {
   const action = useGame((s) => s.action);
   const cancel = useGame((s) => s.cancel);
   const [quantity, setQuantity] = useState(1);
   const [dice, setDice] = useState<number | null>(null);
 
   const myTurn = state.current_player_id === me.id;
-  const disabled = state.status !== "running";
+  const disabled = state.status !== "running" || busy;
   const myRequests = state.pending_actions.filter((a) => a.player_id === me.id);
   const card = state.current_card;
   const isStock = card?.effect.type === "stock";
@@ -51,19 +61,32 @@ export function PlayerActions({ state, me }: { state: GameState; me: PlayerState
         break;
       case "card":
         if (card && (card.category === "small_deal" || card.category === "big_deal")) {
+          const effect = card.effect as { price?: number; down_payment?: number };
+          const price = isStock ? (effect.price ?? 0) * quantity : (effect.down_payment ?? 0);
           if (isStock) {
             buttons.push(
-              <input
-                key="qty"
-                type="number"
-                min={1}
-                value={quantity}
-                onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
-                className="qty"
-              />,
+              <label key="qty" className="row">
+                Акций
+                <input
+                  type="number"
+                  min={1}
+                  value={quantity}
+                  onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
+                  className="qty"
+                />
+              </label>,
             );
           }
-          buttons.push(button("Купить", "buy", isStock ? { quantity } : {}));
+          buttons.push(
+            <button
+              key="buy"
+              disabled={disabled || price > me.cash}
+              title={price > me.cash ? "Не хватает наличных — можно взять кредит в финансовом отчёте" : undefined}
+              onClick={() => action("buy", isStock ? { quantity } : {})}
+            >
+              Купить за {money(price)}
+            </button>,
+          );
         }
         buttons.push(button(card?.category === "market" ? "Закрыть карточку" : "Отказаться", "pass"));
         break;

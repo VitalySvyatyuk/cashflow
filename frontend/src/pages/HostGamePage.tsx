@@ -1,10 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, Navigate, useParams } from "react-router";
 
 import { api } from "../api/http";
 import type { GameState } from "../api/types";
 import { Board } from "../components/board/Board";
-import { CardView } from "../components/CardView";
+import { GameCard } from "../components/card/GameCard";
+import { FinanceSheet } from "../components/finance/FinanceSheet";
+import { Modal } from "../components/Modal";
 import { Dice } from "../components/dice/Dice";
 import { SoundToggle } from "../components/SoundToggle";
 import { useGameSounds } from "../lib/useGameSounds";
@@ -83,13 +85,17 @@ function HostLobby({ state }: { state: GameState }) {
 
 function HostGame({ state }: { state: GameState }) {
   const current = useCurrentPlayer();
+  const view = useGame((s) => s.view) ?? state;
+  const [viewing, setViewing] = useState<number | null>(null);
+  const viewingPlayer = view.players.find((p) => p.id === viewing);
   useGameSounds("host", null);
+
   return (
     <div className="game-layout host">
       <header>
         <b>Игра {state.code} · ведущий</b>
         <span>
-          Ход {state.turn_number}: {current?.name}
+          Ход {view.turn_number}: {current?.name}
           {state.status === "paused" && " · ❄ заморожена"}
         </span>
         <span className="row">
@@ -109,14 +115,19 @@ function HostGame({ state }: { state: GameState }) {
             </tr>
           </thead>
           <tbody>
-            {state.players.map((p) => (
-              <tr key={p.id} className={p.id === state.current_player_id ? "current" : ""}>
+            {view.players.map((p) => (
+              <tr
+                key={p.id}
+                className={`clickable ${p.id === view.current_player_id ? "current" : ""}`}
+                onClick={() => setViewing(p.id)}
+                title="Финансовый отчёт"
+              >
                 <td>
                   <span className="chip" style={{ background: p.color }} /> {p.name}
                   <div className="muted small">{p.profession?.name}</div>
                 </td>
                 <td>{money(p.cash)}</td>
-                <td>{money(p.statement.cashflow)}</td>
+                <td className={p.statement.cashflow < 0 ? "negative" : ""}>{money(p.statement.cashflow)}</td>
                 <td>{money(p.statement.passive_income)}</td>
               </tr>
             ))}
@@ -125,19 +136,35 @@ function HostGame({ state }: { state: GameState }) {
       </aside>
       <main className="board-area">
         <Board state={state} meId={null}>
-          <Dice values={state.dice} />
-          {state.current_card && <CardView card={state.current_card} />}
+          {view.current_card ? (
+            <GameCard key={view.current_card.id} state={view} me={null} />
+          ) : (
+            <Dice values={state.dice} />
+          )}
         </Board>
+        {view.status === "finished" && (
+          <div className="winner">
+            🏆 Победитель: {view.players.find((p) => p.id === view.winner_id)?.name}
+          </div>
+        )}
       </main>
       <aside className="right">
         <h2>Заявки</h2>
         <ApprovalQueue state={state} />
         <h2>Журнал</h2>
-        <EventLog events={state.events} />
+        <EventLog events={view.events} />
       </aside>
       <footer>
         <HostControls state={state} />
       </footer>
+      {viewingPlayer && (
+        <Modal
+          title={`${viewingPlayer.name} — ${viewingPlayer.profession?.name ?? ""}`}
+          onClose={() => setViewing(null)}
+        >
+          <FinanceSheet player={viewingPlayer} readOnly />
+        </Modal>
+      )}
       <Toast />
     </div>
   );

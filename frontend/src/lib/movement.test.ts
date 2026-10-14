@@ -37,6 +37,24 @@ describe("расписание движения фишек", () => {
     expect(other.startAt).toBe(DICE_MS);
   });
 
+  it("бросок сразу резервирует время хода — ещё до события moved", () => {
+    const roll: GameEvent = {
+      seq: 1,
+      player_id: 1,
+      kind: "dice_rolled",
+      payload: { values: [2, 3] },
+      created_at: "",
+    };
+    expect(recordMove(roll, 0)).toBeNull();
+    expect(msUntilArrival(1, 0)).toBe(DICE_MS + 5 * STEP_MS);
+
+    // moved приходит чуть позже и использует то же расписание
+    const move = recordMove(moved(2, [1, 2, 3, 4, 5]), 20)!;
+    expect(move.startAt).toBe(DICE_MS);
+    expect(move.arrival).toBe(DICE_MS + 5 * STEP_MS);
+    expect(move.queued).toBe(false);
+  });
+
   it("другие события игнорируются", () => {
     expect(recordMove({ ...moved(1, [1]), kind: "payday" })).toBeNull();
   });

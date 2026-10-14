@@ -290,31 +290,204 @@ select {
 .finance .strong {
   font-weight: 700;
 }
-.finance details {
-  margin-top: 8px;
-}
-.finance ul {
-  padding-left: 18px;
-  font-size: 0.9em;
-}
 
+/* Карточка в центре поля */
 .card {
-  width: min(100%, 300px);
+  /* Карточка может выходить за центр поля — главное, чтобы всё было видно */
+  width: 330px;
   background: var(--panel);
   border: 3px solid;
   border-radius: var(--radius);
-  overflow: hidden;
-  box-shadow: 0 8px 30px rgb(0 0 0 / 0.2);
+  box-shadow: 0 10px 34px rgb(0 0 0 / 0.35);
 }
 .card-category {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   color: #fff;
   padding: 6px 12px;
   font-size: 0.85em;
   font-weight: 600;
 }
-.card h3,
-.card p {
-  margin: 12px;
+.card-body {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.card-body h3,
+.card-body p {
+  margin: 0;
+}
+.card-numbers {
+  margin: 0;
+  display: grid;
+  gap: 4px;
+}
+.card-numbers div {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px dashed var(--border);
+  padding-bottom: 3px;
+}
+.card-numbers dd {
+  margin: 0;
+  font-weight: 700;
+}
+.card-chip {
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.3);
+}
+.sell {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sell-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.sell-row .qty {
+  width: 70px;
+}
+button.link.light {
+  color: #fff;
+  opacity: 0.85;
+}
+.negative {
+  color: var(--danger);
+}
+
+/* Модальное окно */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 0.45);
+  display: grid;
+  place-items: center;
+  z-index: 30;
+  padding: 16px;
+}
+.modal {
+  background: var(--panel);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  width: min(760px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 18px 20px;
+}
+.modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Финансовый отчёт */
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.sheet-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.sheet h3 {
+  font-size: 0.9rem;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 4px;
+}
+.sheet-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 0.92em;
+}
+.sheet-row.strong {
+  font-weight: 700;
+  border-top: 1px solid var(--border);
+}
+.sheet-cashflow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  font-size: 1.1em;
+}
+.sheet-cashflow.negative {
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
+}
+.money-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.money-input input {
+  width: 96px;
+  padding: 0.3em 0.5em;
+}
+.money-input button,
+.small-button {
+  padding: 0.3em 0.7em;
+  font-size: 0.9em;
+}
+button.secondary {
+  background: var(--panel);
+  color: var(--text);
+  width: 100%;
+  margin-top: 12px;
+}
+
+/* Левая панель игрока */
+.finance .cash {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+.finance .cash b {
+  font-size: 1.4rem;
+}
+.finance h3 {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 12px 0 4px;
+}
+.exit-progress .bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--border);
+  overflow: hidden;
+  margin-top: 4px;
+}
+.exit-progress .bar div {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.4s;
+}
+ul.plain {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.9em;
+}
+.clickable {
+  cursor: pointer;
+}
+.players li.clickable:hover,
+.overview tr.clickable:hover {
+  outline: 1px solid var(--border);
 }
 
 /* Игровое поле: квадрат, вписанный в центральную область */

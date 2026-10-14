@@ -1,11 +1,24 @@
 import type { GameState } from "../api/types";
 import { money } from "../lib/format";
 
-export function PlayerList({ state, meId }: { state: GameState; meId?: number | null }) {
+export function PlayerList({
+  state,
+  meId,
+  onSelect,
+}: {
+  state: GameState;
+  meId?: number | null;
+  onSelect?: (playerId: number) => void;
+}) {
   return (
     <ul className="players">
       {state.players.map((p) => (
-        <li key={p.id} className={p.id === state.current_player_id ? "current" : ""}>
+        <li
+          key={p.id}
+          className={`${p.id === state.current_player_id ? "current" : ""} ${onSelect ? "clickable" : ""}`}
+          onClick={onSelect ? () => onSelect(p.id) : undefined}
+          title={onSelect ? "Финансовый отчёт" : undefined}
+        >
           <span className="chip" style={{ background: p.color }} />
           <span className="name">
             {p.name}

@@ -1,15 +1,17 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, Navigate, useParams } from "react-router";
 
 import { CLOSE_FORBIDDEN, CLOSE_GAME_NOT_FOUND, CLOSE_REMOVED } from "../api/socket";
 import { Board } from "../components/board/Board";
-import { CardView } from "../components/CardView";
+import { GameCard } from "../components/card/GameCard";
 import { Dice } from "../components/dice/Dice";
 import { SoundToggle } from "../components/SoundToggle";
 import { useGameSounds } from "../lib/useGameSounds";
 import { ConnectionBadge } from "../components/ConnectionBadge";
 import { EventLog } from "../components/EventLog";
-import { FinanceCard } from "../components/FinanceCard";
+import { FinanceSheet } from "../components/finance/FinanceSheet";
+import { FinanceSummary } from "../components/finance/FinanceSummary";
+import { Modal } from "../components/Modal";
 import { PauseOverlay } from "../components/PauseOverlay";
 import { PlayerActions } from "../components/PlayerActions";
 import { PlayerList } from "../components/PlayerList";
@@ -29,9 +31,12 @@ export function PlayerPage() {
   const connect = useGame((s) => s.connect);
   const disconnect = useGame((s) => s.disconnect);
   const state = useGame((s) => s.state);
+  const settled = useGame((s) => s.view);
   const closeCode = useGame((s) => s.closeCode);
   const me = useMe();
   const current = useCurrentPlayer();
+  const [viewing, setViewing] = useState<number | null>(null);
+  const viewingPlayer = useGame((s) => s.view?.players.find((p) => p.id === viewing) ?? null);
   const role = useGame((s) => s.role);
   const playerId = useGame((s) => s.playerId);
   useGameSounds(role, playerId);
@@ -72,13 +77,14 @@ export function PlayerPage() {
     );
   }
 
+  const view = settled ?? state;
   const paused = state.status === "paused";
   return (
     <div className={`game-layout ${paused ? "is-paused" : ""}`}>
       <header>
         <b>Игра {state.code}</b>
         <span>
-          Ход {state.turn_number}: {current?.name}
+          Ход {view.turn_number}: {current?.name}
         </span>
         <span className="row">
           <SoundToggle />
@@ -86,26 +92,37 @@ export function PlayerPage() {
         </span>
       </header>
       <aside className="left">
-        <FinanceCard player={me} />
+        <FinanceSummary player={me} />
       </aside>
       <main className="board-area">
         <Board state={state} meId={me.id}>
-          <Dice values={state.dice} />
-          {state.current_card && <CardView card={state.current_card} />}
+          {view.current_card ? (
+            <GameCard key={view.current_card.id} state={view} me={me} />
+          ) : (
+            <Dice values={state.dice} />
+          )}
         </Board>
-        {state.status === "finished" && (
+        {view.status === "finished" && (
           <div className="winner">
-            🏆 Победитель: {state.players.find((p) => p.id === state.winner_id)?.name}
+            🏆 Победитель: {view.players.find((p) => p.id === view.winner_id)?.name}
           </div>
         )}
       </main>
       <aside className="right">
-        <PlayerList state={state} meId={me.id} />
-        <EventLog events={state.events} />
+        <PlayerList state={view} meId={me.id} onSelect={setViewing} />
+        <EventLog events={view.events} />
       </aside>
       <footer>
-        <PlayerActions state={state} me={me} />
+        <PlayerActions state={view} me={me} busy={settled !== state} />
       </footer>
+      {viewingPlayer && (
+        <Modal
+          title={`${viewingPlayer.name} — ${viewingPlayer.profession?.name ?? ""}`}
+          onClose={() => setViewing(null)}
+        >
+          <FinanceSheet player={viewingPlayer} readOnly={viewingPlayer.id !== me.id} />
+        </Modal>
+      )}
       {paused && <PauseOverlay />}
       <Toast />
     </div>

@@ -71,10 +71,13 @@ DATABASES = {
     }
 }
 
+# channels-redis ждёт сообщения блокирующим BZPOPMIN по 5 секунд, а redis-py 8
+# по умолчанию обрывает чтение тоже через 5 секунд — тихая игра роняла WebSocket.
+# Таймаут чтения должен быть заметно больше времени ожидания.
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {"hosts": [env("REDIS_URL")]},
+        "CONFIG": {"hosts": [{"address": env("REDIS_URL"), "socket_timeout": 30}]},
     }
 }
 

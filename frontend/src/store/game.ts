@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 import { GameSocket, type ConnectionStatus } from "../api/socket";
 import type { GameEvent, GameState, PlayerState, Role } from "../api/types";
-import { recordMove, resetMoves } from "../lib/movement";
+import { msUntilArrival, recordMove, resetMoves } from "../lib/movement";
 
 type Listener = (event: GameEvent, state: GameState) => void;
 
@@ -11,7 +11,13 @@ interface GameStore {
   closeCode: number | null;
   role: Role | null;
   playerId: number | null;
+  /** Состояние с сервера — для поля и кубиков, они анимируются сами. */
   state: GameState | null;
+  /**
+   * Состояние для остального экрана (деньги, журнал, карточка, кнопки):
+   * пока фишка идёт, показываем прежнее и обновляем, когда она дошла.
+   */
+  view: GameState | null;
   error: string | null;
 
   connect: (code: string, token?: string) => void;
@@ -23,6 +29,7 @@ interface GameStore {
 }
 
 let socket: GameSocket | null = null;
+let viewTimer: number | undefined;
 const listeners = new Set<Listener>();
 
 /** Подписка на события игры — для анимаций и звуков. Возвращает функцию отписки. */
@@ -34,6 +41,13 @@ export function onGameEvent(listener: Listener): () => void {
 }
 
 export const useGame = create<GameStore>((set, get) => {
+  const settle = (state: GameState) => {
+    window.clearTimeout(viewTimer);
+    const wait = Math.max(0, ...state.players.map((p) => msUntilArrival(p.id)));
+    if (wait === 0) set({ view: state });
+    else viewTimer = window.setTimeout(() => set({ view: get().state }), wait);
+  };
+
   const send = (message: object) => {
     if (!socket?.send(message)) set({ error: "Нет связи с сервером — подождите." });
   };
@@ -44,25 +58,34 @@ export const useGame = create<GameStore>((set, get) => {
     role: null,
     playerId: null,
     state: null,
+    view: null,
     error: null,
 
     connect(code, token) {
       get().disconnect();
       resetMoves();
-      set({ state: null, role: null, playerId: null, closeCode: null, error: null });
+      window.clearTimeout(viewTimer);
+      set({ state: null, view: null, role: null, playerId: null, closeCode: null, error: null });
       socket = new GameSocket(GameSocket.url(code, token), {
         onStatus: (connection, closeCode) => set({ connection, closeCode: closeCode ?? null }),
         onMessage: (message) => {
           switch (message.type) {
             case "hello":
-              set({ role: message.role, playerId: message.player_id, state: message.state });
+              set({
+                role: message.role,
+                playerId: message.player_id,
+                state: message.state,
+                view: message.state,
+              });
               break;
             case "state":
               set({ state: message.state });
+              settle(message.state);
               break;
             case "event":
               recordMove(message.event); // до подписчиков: им нужно расписание хода
               set({ state: message.state });
+              settle(message.state);
               listeners.forEach((l) => l(message.event, message.state));
               break;
             case "error":
@@ -87,11 +110,11 @@ export const useGame = create<GameStore>((set, get) => {
   };
 });
 
-/** Игрок этого экрана (для ведущего — null). */
+/** Игрок этого экрана (для ведущего — null), в «показанном» состоянии. */
 export function useMe(): PlayerState | null {
-  return useGame((s) => s.state?.players.find((p) => p.id === s.playerId) ?? null);
+  return useGame((s) => s.view?.players.find((p) => p.id === s.playerId) ?? null);
 }
 
 export function useCurrentPlayer(): PlayerState | null {
-  return useGame((s) => s.state?.players.find((p) => p.id === s.state?.current_player_id) ?? null);
+  return useGame((s) => s.view?.players.find((p) => p.id === s.view?.current_player_id) ?? null);
 }
