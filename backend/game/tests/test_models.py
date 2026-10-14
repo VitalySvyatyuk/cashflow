@@ -1,6 +1,6 @@
 import pytest
 from django.core.management import call_command
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 
 from game.models import (
     GAME_CODE_ALPHABET,
@@ -84,3 +84,23 @@ def test_card_colors_are_hex():
     call_command("seed", stdout=None)
     for color in Card.objects.values_list("color", flat=True):
         assert len(color) == 7 and color.startswith("#")
+
+
+def test_game_code_is_four_digits(host):
+    code = Game.objects.create(host=host).code
+    assert len(code) == 4 and code.isdigit()
+
+
+def test_code_unique_only_among_active_games(host):
+    Game.objects.create(host=host, code="1234", status=Game.Status.FINISHED)
+    active = Game.objects.create(host=host, code="1234")
+    with pytest.raises(IntegrityError), transaction.atomic():
+        Game.objects.create(host=host, code="1234")
+    assert Game.objects.by_code(" 1234 ") == active
+
+
+def test_new_code_avoids_active_games(host, monkeypatch):
+    Game.objects.create(host=host, code="1111")
+    codes = iter(["1111", "2222"])
+    monkeypatch.setattr("game.models.generate_game_code", lambda: next(codes))
+    assert Game.objects.create(host=host).code == "2222"

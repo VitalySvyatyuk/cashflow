@@ -7,9 +7,9 @@ from django.db import models
 
 MAX_PLAYERS = 6
 
-# Без похожих символов (0/O, 1/I/L), чтобы код было легко продиктовать голосом.
-GAME_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
-GAME_CODE_LENGTH = 6
+# Код игры — 4 цифры: легко продиктовать голосом и ввести на планшете.
+GAME_CODE_ALPHABET = "0123456789"
+GAME_CODE_LENGTH = 4
 
 PLAYER_COLORS = ["#e53935", "#1e88e5", "#43a047", "#fdd835", "#8e24aa", "#fb8c00"]
 
@@ -110,6 +110,20 @@ class BoardCell(models.Model):
         return f"{self.get_track_display()} #{self.position}: {self.title}"
 
 
+class GameQuerySet(models.QuerySet):
+    def active(self):
+        return self.exclude(status=Game.Status.FINISHED)
+
+    def by_code(self, code):
+        """Игра по коду: незавершённая, а если такой нет — самая свежая."""
+        code = code.strip()
+        return (
+            self.filter(code=code)
+            .order_by(models.Case(models.When(status="finished", then=1), default=0), "-created_at")
+            .first()
+        )
+
+
 class Game(models.Model):
     class Status(models.TextChoices):
         LOBBY = "lobby", "Сбор игроков"
@@ -117,7 +131,8 @@ class Game(models.Model):
         PAUSED = "paused", "Заморожена"
         FINISHED = "finished", "Завершена"
 
-    code = models.CharField("код", max_length=GAME_CODE_LENGTH, unique=True)
+    # Уникален только среди незавершённых игр — кодов всего 10 000.
+    code = models.CharField("код", max_length=GAME_CODE_LENGTH, db_index=True)
     host = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
@@ -143,6 +158,8 @@ class Game(models.Model):
     started_at = models.DateTimeField("начата", null=True, blank=True)
     finished_at = models.DateTimeField("завершена", null=True, blank=True)
 
+    objects = GameQuerySet.as_manager()
+
     class Meta:
         verbose_name = "игра"
         verbose_name_plural = "игры"
@@ -151,6 +168,11 @@ class Game(models.Model):
             models.CheckConstraint(
                 condition=models.Q(max_players__gte=1, max_players__lte=MAX_PLAYERS),
                 name="game_max_players_range",
+            ),
+            models.UniqueConstraint(
+                fields=["code"],
+                condition=~models.Q(status="finished"),
+                name="game_unique_active_code",
             ),
         ]
 
@@ -166,7 +188,7 @@ class Game(models.Model):
     def _unique_code():
         while True:
             code = generate_game_code()
-            if not Game.objects.filter(code=code).exists():
+            if not Game.objects.active().filter(code=code).exists():
                 return code
 
 

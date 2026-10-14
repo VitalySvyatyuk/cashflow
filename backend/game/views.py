@@ -1,3 +1,4 @@
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -18,11 +19,15 @@ from game.serializers import (
 
 
 def _game(code):
-    return get_object_or_404(Game.objects.prefetch_related("players"), code=code.upper())
+    game = Game.objects.by_code(code)
+    if game is None:
+        raise Http404("Игра не найдена.")
+    return game
 
 
 def _game_response(game, status_code=status.HTTP_200_OK):
-    return Response(GameSerializer(_game(game.code)).data, status=status_code)
+    game = Game.objects.prefetch_related("players").get(pk=game.pk)
+    return Response(GameSerializer(game).data, status=status_code)
 
 
 def _run(action, *args):

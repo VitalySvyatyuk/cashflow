@@ -3,9 +3,9 @@
 import random
 
 from django.db import transaction
-from django.db.models import Max
 from django.utils import timezone
 
+from game.events import log_event
 from game.models import (
     MAX_PLAYERS,
     PLAYER_COLORS,
@@ -13,7 +13,6 @@ from game.models import (
     CardCategory,
     DeckState,
     Game,
-    GameEvent,
     Liability,
     Player,
     Profession,
@@ -24,14 +23,6 @@ MAX_NAME_LENGTH = 40
 
 class LobbyError(Exception):
     """Ошибка, текст которой можно показать пользователю."""
-
-
-def log_event(game, kind, player=None, **payload):
-    """Пишет событие в журнал. Вызывать внутри транзакции с заблокированной игрой."""
-    last = game.events.aggregate(last=Max("seq"))["last"] or 0
-    return GameEvent.objects.create(
-        game=game, seq=last + 1, player=player, kind=kind, payload=payload
-    )
 
 
 def _lock(game):
@@ -77,7 +68,7 @@ def remove_player(game, player):
         game = _lock(game)
         if game.status != Game.Status.LOBBY:
             raise LobbyError("После старта игроков убрать нельзя.")
-        log_event(game, "player_left", name=player.name)
+        log_event(game, "player_left", player_id=player.id, name=player.name)
         player.delete()
 
 

@@ -31,7 +31,7 @@ def test_join_returns_token_once(api, game):
     assert response.status_code == 201
     assert response.data["token"]
 
-    detail = api.get(f"/api/games/{game.code.lower()}/")
+    detail = api.get(f"/api/games/{game.code}/")
     assert detail.status_code == 200
     assert [p["name"] for p in detail.data["players"]] == ["Маша"]
     assert "token" not in detail.data["players"][0]
@@ -45,7 +45,7 @@ def test_join_error_message_is_shown(api, game):
 
 
 def test_unknown_game_is_404(api):
-    assert api.get("/api/games/NOPE00/").status_code == 404
+    assert api.get("/api/games/abcd/").status_code == 404
 
 
 def test_me_by_token(api, game):
