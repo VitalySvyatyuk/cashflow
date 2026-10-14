@@ -6,8 +6,19 @@ import { MoneyInput } from "../MoneyInput";
 const BANK_LOAN = "Банковский кредит";
 
 /** Финансовый отчёт как на карточке настольной игры. */
-export function FinanceSheet({ player, readOnly }: { player: PlayerState; readOnly: boolean }) {
-  const action = useGame((s) => s.action);
+export function FinanceSheet({
+  player,
+  readOnly,
+  asHost = false,
+}: {
+  player: PlayerState;
+  readOnly: boolean;
+  /** Ведущий: кредиты и погашения за игрока выполняются сразу. */
+  asHost?: boolean;
+}) {
+  const send = useGame((s) => s.action);
+  const action = (kind: string, params: Record<string, unknown>) =>
+    send(kind, asHost ? { ...params, player_id: player.id } : params);
   const s = player.statement;
   const prof = player.profession;
   const incomeAssets = player.assets.filter((a) => a.cashflow !== 0);

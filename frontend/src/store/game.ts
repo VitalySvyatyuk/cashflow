@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 import { GameSocket, type ConnectionStatus } from "../api/socket";
-import type { GameEvent, GameState, PlayerState, Role } from "../api/types";
+import type { GameEvent, GameState, PlayerState, Presence, Role } from "../api/types";
 import { msUntilArrival, recordMove, resetMoves } from "../lib/movement";
 
 type Listener = (event: GameEvent, state: GameState) => void;
@@ -18,6 +18,8 @@ interface GameStore {
    * пока фишка идёт, показываем прежнее и обновляем, когда она дошла.
    */
   view: GameState | null;
+  /** Кто сейчас на связи. */
+  presence: Presence | null;
   error: string | null;
 
   connect: (code: string, token?: string) => void;
@@ -59,13 +61,22 @@ export const useGame = create<GameStore>((set, get) => {
     playerId: null,
     state: null,
     view: null,
+    presence: null,
     error: null,
 
     connect(code, token) {
       get().disconnect();
       resetMoves();
       window.clearTimeout(viewTimer);
-      set({ state: null, view: null, role: null, playerId: null, closeCode: null, error: null });
+      set({
+        state: null,
+        view: null,
+        presence: null,
+        role: null,
+        playerId: null,
+        closeCode: null,
+        error: null,
+      });
       socket = new GameSocket(GameSocket.url(code, token), {
         onStatus: (connection, closeCode) => set({ connection, closeCode: closeCode ?? null }),
         onMessage: (message) => {
@@ -76,7 +87,11 @@ export const useGame = create<GameStore>((set, get) => {
                 playerId: message.player_id,
                 state: message.state,
                 view: message.state,
+                presence: message.presence,
               });
+              break;
+            case "presence":
+              set({ presence: message });
               break;
             case "state":
               set({ state: message.state });
@@ -117,4 +132,8 @@ export function useMe(): PlayerState | null {
 
 export function useCurrentPlayer(): PlayerState | null {
   return useGame((s) => s.view?.players.find((p) => p.id === s.view?.current_player_id) ?? null);
+}
+
+export function useOnline(playerId: number): boolean {
+  return useGame((s) => s.presence?.players.includes(playerId) ?? false);
 }

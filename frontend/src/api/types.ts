@@ -148,8 +148,16 @@ export interface SessionUser {
 }
 
 // WebSocket: сервер → клиент
+export interface Presence {
+  type: "presence";
+  /** id игроков, у которых открыта игра */
+  players: number[];
+  host: boolean;
+}
+
 export type ServerMessage =
-  | { type: "hello"; role: Role; player_id: number | null; state: GameState }
+  | { type: "hello"; role: Role; player_id: number | null; state: GameState; presence: Presence }
+  | Presence
   | { type: "event"; event: GameEvent; state: GameState }
   | { type: "state"; state: GameState }
   | { type: "error"; message: string }

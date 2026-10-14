@@ -12,6 +12,7 @@ import { SoundToggle } from "../components/SoundToggle";
 import { useGameSounds } from "../lib/useGameSounds";
 import { ConnectionBadge } from "../components/ConnectionBadge";
 import { EventLog } from "../components/EventLog";
+import { PlayerActions } from "../components/PlayerActions";
 import { ApprovalQueue, HostControls } from "../components/HostPanel";
 import { Toast } from "../components/Toast";
 import { money } from "../lib/format";
@@ -48,6 +49,7 @@ export function HostGamePage() {
 }
 
 function HostLobby({ state }: { state: GameState }) {
+  const presence = useGame((s) => s.presence);
   const setError = (message: string) => useGame.setState({ error: message });
   const run = (promise: Promise<unknown>) =>
     promise.catch((err) => setError(err instanceof Error ? err.message : "Ошибка"));
@@ -66,6 +68,7 @@ function HostLobby({ state }: { state: GameState }) {
           {state.players.map((p) => (
             <li key={p.id}>
               <span className="chip" style={{ background: p.color }} />
+              <span className={`presence ${presence?.players.includes(p.id) ? "on" : "off"}`} />
               <span className="name">{p.name}</span>
               <button className="link" onClick={() => run(api.kick(state.code, p.id))}>
                 убрать
@@ -88,6 +91,8 @@ function HostGame({ state }: { state: GameState }) {
   const view = useGame((s) => s.view) ?? state;
   const [viewing, setViewing] = useState<number | null>(null);
   const viewingPlayer = view.players.find((p) => p.id === viewing);
+  const presence = useGame((s) => s.presence);
+  const settledCurrent = view.players.find((p) => p.id === view.current_player_id);
   useGameSounds("host", null);
 
   return (
@@ -123,7 +128,12 @@ function HostGame({ state }: { state: GameState }) {
                 title="Финансовый отчёт"
               >
                 <td>
-                  <span className="chip" style={{ background: p.color }} /> {p.name}
+                  <span className="chip" style={{ background: p.color }} />{" "}
+                  <span
+                    className={`presence ${presence?.players.includes(p.id) ? "on" : "off"}`}
+                    title={presence?.players.includes(p.id) ? "в сети" : "не в сети"}
+                  />{" "}
+                  {p.name}
                   <div className="muted small">{p.profession?.name}</div>
                 </td>
                 <td>{money(p.cash)}</td>
@@ -152,17 +162,23 @@ function HostGame({ state }: { state: GameState }) {
         <h2>Заявки</h2>
         <ApprovalQueue state={state} />
         <h2>Журнал</h2>
-        <EventLog events={view.events} />
+        <EventLog events={view.events} players={view.players} />
       </aside>
-      <footer>
+      <footer className="host-footer">
         <HostControls state={state} />
+        {settledCurrent && state.status === "running" && (
+          <div className="act-for">
+            <span className="muted small">За игрока {settledCurrent.name}:</span>
+            <PlayerActions state={view} me={settledCurrent} busy={view !== state} asHost />
+          </div>
+        )}
       </footer>
       {viewingPlayer && (
         <Modal
           title={`${viewingPlayer.name} — ${viewingPlayer.profession?.name ?? ""}`}
           onClose={() => setViewing(null)}
         >
-          <FinanceSheet player={viewingPlayer} readOnly />
+          <FinanceSheet player={viewingPlayer} readOnly={false} asHost />
         </Modal>
       )}
       <Toast />

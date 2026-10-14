@@ -758,3 +758,42 @@ ul.plain {
   z-index: 20;
   cursor: pointer;
 }
+
+/* Присутствие: зелёная точка — в сети */
+.presence {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+.presence.on {
+  background: #43a047;
+  box-shadow: 0 0 0 2px rgb(67 160 71 / 0.25);
+}
+.presence.off {
+  background: transparent;
+  border: 1.5px solid var(--muted);
+}
+.host-footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.act-for {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  padding-left: 16px;
+  border-left: 1px solid var(--border);
+}
+.log-filter {
+  font-size: 0.85em;
+  padding: 0.3em 0.5em;
+}
+.approvals input {
+  padding: 0.3em 0.5em;
+}

@@ -9,13 +9,18 @@ export function PlayerActions({
   state,
   me,
   busy = false,
+  asHost = false,
 }: {
   state: GameState;
   me: PlayerState;
   /** Фишка ещё идёт — ждём, пока экран догонит сервер. */
   busy?: boolean;
+  /** Ведущий действует за игрока: без заявок, сразу. */
+  asHost?: boolean;
 }) {
-  const action = useGame((s) => s.action);
+  const send = useGame((s) => s.action);
+  const action = (kind: string, params: Record<string, unknown> = {}) =>
+    send(kind, asHost ? { ...params, player_id: me.id } : params);
   const cancel = useGame((s) => s.cancel);
   const [quantity, setQuantity] = useState(1);
   const [dice, setDice] = useState<number | null>(null);
@@ -114,14 +119,15 @@ export function PlayerActions({
   return (
     <div className="actions">
       {buttons.length ? buttons : <span className="muted">Ход другого игрока</span>}
-      {myRequests.map((r) => (
-        <span key={r.id} className="request">
-          ⏳ {r.description}
-          <button className="link" onClick={() => cancel(r.id)}>
-            отозвать
-          </button>
-        </span>
-      ))}
+      {!asHost &&
+        myRequests.map((r) => (
+          <span key={r.id} className="request">
+            ⏳ {r.description}
+            <button className="link" onClick={() => cancel(r.id)}>
+              отозвать
+            </button>
+          </span>
+        ))}
     </div>
   );
 }

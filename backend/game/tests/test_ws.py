@@ -18,8 +18,26 @@ def in_memory_layer(settings):
     settings.CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
 
 
+class GameClient(WebsocketCommunicator):
+    """Коммуникатор, который по умолчанию пропускает рассылки о присутствии."""
+
+    skip_presence = True
+
+    async def receive_json_from(self, timeout=1):
+        while True:
+            message = await super().receive_json_from(timeout)
+            if not (self.skip_presence and message.get("type") == "presence"):
+                return message
+
+    async def next_presence(self):
+        while True:
+            message = await WebsocketCommunicator.receive_json_from(self, 1)
+            if message.get("type") == "presence":
+                return message
+
+
 async def connect(path, headers=()):
-    communicator = WebsocketCommunicator(application, path, headers=[ORIGIN, *headers])
+    communicator = GameClient(application, path, headers=[ORIGIN, *headers])
     connected, _ = await communicator.connect()
     assert connected
     return communicator
@@ -159,4 +177,27 @@ async def test_host_pause_over_websocket(game, host, seeded):
     await host_ws.send_json_to({"type": "action", "kind": "pause"})
     paused = await receive_until(host_ws, "paused")
     assert paused["state"]["status"] == "paused"
+    await host_ws.disconnect()
+
+
+async def test_presence_tracks_players_and_host(game, host):
+    masha = await sync_to_async(lobby.join_game)(game, "Маша")
+    player_ws = await connect(f"/ws/games/{game.code}/?token={masha.token}")
+    hello = await player_ws.receive_json_from()
+    assert hello["presence"] == {"type": "presence", "players": [masha.id], "host": False}
+
+    host_ws = await connect(f"/ws/games/{game.code}/", headers=[await host_cookie(host)])
+    assert (await host_ws.receive_json_from())["presence"]["host"] is True
+    online = {"type": "presence", "players": [masha.id], "host": True}
+    assert await host_ws.next_presence() == online
+
+    # Вторая вкладка того же игрока: закрыли одну из двух — игрок всё ещё в сети.
+    second = await connect(f"/ws/games/{game.code}/?token={masha.token}")
+    await second.receive_json_from()
+    assert await host_ws.next_presence() == online
+    await second.disconnect()
+    assert await host_ws.next_presence() == online
+
+    await player_ws.disconnect()
+    assert await host_ws.next_presence() == {"type": "presence", "players": [], "host": True}
     await host_ws.disconnect()

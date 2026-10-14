@@ -1,4 +1,5 @@
 import uuid
+from collections import Counter, defaultdict
 from urllib.parse import parse_qs
 
 from channels.db import database_sync_to_async
@@ -14,6 +15,22 @@ from game.state import build_state
 CLOSE_GAME_NOT_FOUND = 4404
 CLOSE_FORBIDDEN = 4403
 CLOSE_REMOVED = 4410
+
+HOST = "host"
+
+# Кто сейчас на связи: игра → {id игрока или "host": число открытых вкладок}.
+# Хранится в памяти процесса: игру обслуживает один процесс Daphne, а после
+# его перезапуска все клиенты переподключаются, и счётчики собираются заново.
+PRESENCE: defaultdict[int, Counter] = defaultdict(Counter)
+
+
+def presence(game_id):
+    online = PRESENCE[game_id]
+    return {
+        "type": "presence",
+        "players": sorted(k for k, n in online.items() if k != HOST and n > 0),
+        "host": online[HOST] > 0,
+    }
 
 
 class GameConsumer(AsyncJsonWebsocketConsumer):
@@ -32,18 +49,39 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         self.game_id, self.role, self.player_id, game_code = identity
         self.group = group_name(game_code)
         await self.channel_layer.group_add(self.group, self.channel_name)
+        PRESENCE[self.game_id][self._presence_key] += 1
         await self.send_json(
             {
                 "type": "hello",
                 "role": self.role,
                 "player_id": self.player_id,
                 "state": await self._state(),
+                "presence": presence(self.game_id),
             }
         )
+        await self._broadcast_presence()
 
     async def disconnect(self, code):
-        if hasattr(self, "group"):
-            await self.channel_layer.group_discard(self.group, self.channel_name)
+        if not hasattr(self, "group"):
+            return
+        online = PRESENCE[self.game_id]
+        online[self._presence_key] -= 1
+        if online[self._presence_key] <= 0:
+            del online[self._presence_key]
+        await self._broadcast_presence()
+        await self.channel_layer.group_discard(self.group, self.channel_name)
+
+    @property
+    def _presence_key(self):
+        return self.player_id if self.role == "player" else HOST
+
+    async def _broadcast_presence(self):
+        await self.channel_layer.group_send(
+            self.group, {"type": "game.presence", "presence": presence(self.game_id)}
+        )
+
+    async def game_presence(self, message):
+        await self.send_json(message["presence"])
 
     async def receive_json(self, content):
         kind = content.get("type")
