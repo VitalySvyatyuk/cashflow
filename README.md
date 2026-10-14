@@ -7,7 +7,7 @@
 
 ```
 backend/             Django 5.2 + Channels + DRF
-frontend/            React + TypeScript + Vite (появится на шаге 7)
+frontend/            React 19 + TypeScript + Vite (Node 22 в Docker)
 docker-compose.yml   PostgreSQL 16 и Redis 7 для разработки
 .env.example         переменные окружения
 ```
@@ -17,18 +17,24 @@ docker-compose.yml   PostgreSQL 16 и Redis 7 для разработки
 Нужен Docker Desktop.
 
 ```sh
-make up          # создаёт .env из .env.example, собирает и поднимает backend + postgres + redis
+make up          # создаёт .env из .env.example, поднимает frontend + backend + postgres + redis
 make superuser   # создать ведущего (суперпользователя)
 make seed        # профессии, карточки и клетки поля (временные данные)
 make logs        # логи
 make down        # остановить
 ```
 
-- Проверка здоровья: http://localhost:8000/api/health/ → `{"db": "ok", "redis": "ok"}`
-- Админка: http://localhost:8000/admin/
-- Код `backend/` смонтирован в контейнер, сервер перезапускается при изменениях.
+| Адрес | Что |
+|---|---|
+| http://localhost:5173/ | вход игрока: код игры + имя |
+| http://localhost:5173/host | ведущий: вход, создание игры, список игр |
+| http://localhost:5173/admin/ | админка Django |
+| http://localhost:5173/api/health/ | `{"db": "ok", "redis": "ok"}` |
 
-Порты открыты только на `127.0.0.1`: backend — 8000, Postgres — 5433
+Vite проксирует `/api`, `/ws`, `/admin` на бэкенд — браузер работает с одним адресом.
+Код `backend/` и `frontend/` смонтирован в контейнеры, изменения подхватываются сразу.
+
+Порты открыты только на `127.0.0.1`: frontend — 5173, backend — 8000, Postgres — 5433
 (5432 часто занят локальным Postgres), Redis — 6379.
 
 ## API лобби
@@ -101,6 +107,7 @@ make down        # остановить
 make venv    # один раз
 make test
 make lint    # make fmt — автоисправление
+make typecheck   # проверка типов фронтенда (в контейнере)
 ```
 
 Прочее: `make migrate`, `make makemigrations`, `make shell`, `make psql`.
