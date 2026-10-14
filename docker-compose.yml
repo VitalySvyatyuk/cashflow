@@ -1,6 +1,24 @@
-# Инфраструктура для локальной разработки.
-# Сервисы backend и frontend добавятся на шагах 2 и 7.
+# Окружение для локальной разработки.
+# Сервис frontend добавится на шаге 7.
 services:
+  backend:
+    build: ./backend
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   postgres:
     image: postgres:16-alpine
     environment:

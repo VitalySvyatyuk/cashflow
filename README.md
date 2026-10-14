@@ -6,23 +6,41 @@
 ## Структура
 
 ```
-backend/             Django + Channels (появится на шаге 2)
+backend/             Django 5.2 + Channels + DRF
 frontend/            React + TypeScript + Vite (появится на шаге 7)
 docker-compose.yml   PostgreSQL 16 и Redis 7 для разработки
 .env.example         переменные окружения
 ```
 
-## Запуск инфраструктуры
+## Запуск
 
-Нужен Docker (Docker Desktop или OrbStack).
+Нужен Docker Desktop.
 
 ```sh
-make up      # создаёт .env из .env.example и поднимает postgres + redis
-make psql    # консоль БД
-make down    # остановить
+make up          # создаёт .env из .env.example, собирает и поднимает backend + postgres + redis
+make superuser   # создать ведущего (суперпользователя)
+make logs        # логи
+make down        # остановить
 ```
 
-Порты открыты только на `127.0.0.1`: Postgres — 5433 (5432 часто занят локальным Postgres), Redis — 6379.
+- Проверка здоровья: http://localhost:8000/api/health/ → `{"db": "ok", "redis": "ok"}`
+- Админка: http://localhost:8000/admin/
+- Код `backend/` смонтирован в контейнер, сервер перезапускается при изменениях.
+
+Порты открыты только на `127.0.0.1`: backend — 8000, Postgres — 5433
+(5432 часто занят локальным Postgres), Redis — 6379.
+
+## Тесты и линтер
+
+Тесты запускаются локально, в `.venv`, против Postgres и Redis из Docker:
+
+```sh
+make venv    # один раз
+make test
+make lint    # make fmt — автоисправление
+```
+
+Прочее: `make migrate`, `make makemigrations`, `make shell`, `make psql`.
 
 ### Если Docker Hub недоступен
 
