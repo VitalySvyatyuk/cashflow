@@ -302,10 +302,12 @@ def _next_turn(game):
     )
 
 
-def _dice_options(player):
-    """(обычное число кубиков, максимум) для игрока."""
-    base = 1 if player.track == Track.RAT_RACE else 2
-    return base, base + 1 if player.charity_turns else base
+MIN_DICE, MAX_DICE = 1, 3
+
+
+def _default_dice(player):
+    """Сколько кубиков, если игрок не выбрал сам."""
+    return 1 if player.track == Track.RAT_RACE else 2
 
 
 def _move(ctx, steps):
@@ -485,15 +487,13 @@ def _parse_roll(params):
 
 
 def _check_roll(ctx):
-    base, maximum = _dice_options(ctx.player)
-    if not base <= ctx.params.get("dice", base) <= maximum:
-        raise GameError(f"Можно бросить от {base} до {maximum} кубиков.")
+    if not MIN_DICE <= ctx.params.get("dice", MIN_DICE) <= MAX_DICE:
+        raise GameError(f"Можно бросить от {MIN_DICE} до {MAX_DICE} кубиков.")
 
 
 def _run_roll(ctx):
     player = ctx.player
-    base, maximum = _dice_options(player)
-    count = ctx.params.get("dice", maximum)
+    count = ctx.params.get("dice", _default_dice(player))
     values = [ctx.rnd.randint(1, 6) for _ in range(count)]
     if player.charity_turns:
         player.charity_turns -= 1
@@ -685,7 +685,7 @@ def _run_charity(ctx):
         "charity",
         player=player,
         amount=amount,
-        text=f"{player.name} жертвует {_money(amount)} и 3 хода бросает больше кубиков",
+        text=f"{player.name} жертвует {_money(amount)}",
     )
     _set_phase(ctx.game, Game.Phase.END_TURN)
 

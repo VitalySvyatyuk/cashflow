@@ -1,12 +1,14 @@
 import { motion } from "motion/react";
-import { Children, useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { useBoard } from "../../api/board";
 import type { BoardCell, GameState, PlayerState, Track } from "../../api/types";
 import { textOn } from "../../lib/format";
 import { onGameEvent } from "../../store/game";
 import { CENTER, RINGS, SIZE, TOKEN_RADIUS, sectorPath, tokenPoint } from "./geometry";
-import { STEP_MS, useTokenSteps, type Spot } from "./useTokenSteps";
+import { msUntilArrival } from "../../lib/movement";
+import { STEP_MS } from "../../lib/timing";
+import { useTokenSteps, type Spot } from "./useTokenSteps";
 
 const LANDING_SHOW_MS = 5000;
 
@@ -25,7 +27,7 @@ interface Props {
 
 export function Board({ state, meId, children }: Props) {
   const board = useBoard();
-  const { overrides, remainingMs } = useTokenSteps();
+  const overrides = useTokenSteps();
   const [landing, setLanding] = useState<Landing | null>(null);
 
   // Описание клетки — когда фишка до неё дошла.
@@ -39,13 +41,11 @@ export function Board({ state, meId, children }: Props) {
         (c) => c.id === event.payload.cell_id,
       );
       if (!player || !cell) return;
-      const show = window.setTimeout(
-        () => setLanding({ key: event.seq, player, cell }),
-        remainingMs(player.id),
-      );
+      const wait = msUntilArrival(player.id);
+      const show = window.setTimeout(() => setLanding({ key: event.seq, player, cell }), wait);
       const hide = window.setTimeout(
         () => setLanding((l) => (l?.key === event.seq ? null : l)),
-        remainingMs(player.id) + LANDING_SHOW_MS,
+        wait + LANDING_SHOW_MS,
       );
       timers.push(show, hide);
     });
@@ -54,7 +54,6 @@ export function Board({ state, meId, children }: Props) {
       timers.forEach((t) => window.clearTimeout(t));
       timers = [];
     };
-    // remainingMs читает ref — пересоздавать подписку из-за неё не нужно.
   }, [board]);
 
   if (!board) return <div className="board-loading">Загрузка поля…</div>;
@@ -97,7 +96,7 @@ export function Board({ state, meId, children }: Props) {
         )}
 
         <circle cx={CENTER} cy={CENTER} r={RINGS.rat_race.inner - 12} className="board-center" />
-        {Children.toArray(children).length === 0 && (
+        {!state.dice.length && !state.current_card && (
           <text x={CENTER} y={CENTER} dy="0.35em" className="board-title">
             ДЕНЕЖНЫЙ ПОТОК
           </text>

@@ -8,13 +8,15 @@ export function PlayerActions({ state, me }: { state: GameState; me: PlayerState
   const action = useGame((s) => s.action);
   const cancel = useGame((s) => s.cancel);
   const [quantity, setQuantity] = useState(1);
+  const [dice, setDice] = useState<number | null>(null);
 
   const myTurn = state.current_player_id === me.id;
   const disabled = state.status !== "running";
   const myRequests = state.pending_actions.filter((a) => a.player_id === me.id);
   const card = state.current_card;
   const isStock = card?.effect.type === "stock";
-  const baseDice = me.track === "rat_race" ? 1 : 2;
+  // Без выбора — как в правилах: 1 кубик на крысиных бегах, 2 на скоростной дорожке.
+  const diceCount = dice ?? (me.track === "rat_race" ? 1 : 2);
 
   const button = (label: string, kind: string, params?: Record<string, unknown>) => (
     <button key={label} disabled={disabled} onClick={() => action(kind, params)}>
@@ -26,12 +28,21 @@ export function PlayerActions({ state, me }: { state: GameState; me: PlayerState
   if (myTurn) {
     switch (state.phase) {
       case "roll":
-        if (me.charity_turns > 0) {
-          buttons.push(button(`🎲 ${baseDice} кубик`, "roll", { dice: baseDice }));
-          buttons.push(button(`🎲 ${baseDice + 1} кубика`, "roll", { dice: baseDice + 1 }));
-        } else {
-          buttons.push(button("🎲 Бросить", "roll"));
-        }
+        buttons.push(
+          <div key="dice-count" className="segmented" role="group" aria-label="Сколько кубиков">
+            {[1, 2, 3].map((n) => (
+              <button
+                key={n}
+                className={n === diceCount ? "active" : ""}
+                aria-pressed={n === diceCount}
+                onClick={() => setDice(n)}
+              >
+                {n}
+              </button>
+            ))}
+          </div>,
+        );
+        buttons.push(button(`🎲 Бросить ${diceCount === 1 ? "кубик" : `${diceCount} кубика`}`, "roll", { dice: diceCount }));
         break;
       case "choose_deal":
         buttons.push(button("Малая сделка", "choose_deal", { size: "small" }));

@@ -5,6 +5,9 @@ import { api } from "../api/http";
 import type { GameState } from "../api/types";
 import { Board } from "../components/board/Board";
 import { CardView } from "../components/CardView";
+import { Dice } from "../components/dice/Dice";
+import { SoundToggle } from "../components/SoundToggle";
+import { useGameSounds } from "../lib/useGameSounds";
 import { ConnectionBadge } from "../components/ConnectionBadge";
 import { EventLog } from "../components/EventLog";
 import { ApprovalQueue, HostControls } from "../components/HostPanel";
@@ -80,6 +83,7 @@ function HostLobby({ state }: { state: GameState }) {
 
 function HostGame({ state }: { state: GameState }) {
   const current = useCurrentPlayer();
+  useGameSounds("host", null);
   return (
     <div className="game-layout host">
       <header>
@@ -88,7 +92,10 @@ function HostGame({ state }: { state: GameState }) {
           Ход {state.turn_number}: {current?.name}
           {state.status === "paused" && " · ❄ заморожена"}
         </span>
-        <ConnectionBadge />
+        <span className="row">
+          <SoundToggle />
+          <ConnectionBadge />
+        </span>
       </header>
       <aside className="left">
         <h2>Игроки</h2>
@@ -118,7 +125,7 @@ function HostGame({ state }: { state: GameState }) {
       </aside>
       <main className="board-area">
         <Board state={state} meId={null}>
-          {state.dice.length > 0 && <div className="dice">🎲 {state.dice.join(" + ")}</div>}
+          <Dice values={state.dice} />
           {state.current_card && <CardView card={state.current_card} />}
         </Board>
       </main>

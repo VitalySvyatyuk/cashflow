@@ -420,9 +420,64 @@ select {
   margin: 6px 0 0;
   padding: 0;
 }
-.dice {
-  font-size: 1.5rem;
+/* Кубики: CSS-куб с точками */
+.dice-row {
+  display: flex;
+  gap: 14px;
+  perspective: 600px;
+}
+.die {
+  --die-size: 52px;
+  --die-half: 26px;
+  width: var(--die-size);
+  height: var(--die-size);
+  position: relative;
+  transform-style: preserve-3d;
+}
+.die-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  padding: 7px;
+  background: #fbfaf7;
+  border: 1px solid #d8d2c4;
+  border-radius: 10px;
+  box-shadow: inset 0 0 8px rgb(0 0 0 / 0.12);
+  backface-visibility: hidden;
+}
+.pip,
+.pip-empty {
+  place-self: center;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.pip {
+  background: #1f2328;
+}
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.segmented button {
+  border: none;
+  border-radius: 0;
+  background: var(--panel);
   color: var(--text);
+  min-width: 42px;
+}
+.segmented button.active {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+.icon-button {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  padding: 2px 6px;
 }
 .winner {
   position: absolute;

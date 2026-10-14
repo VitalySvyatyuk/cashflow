@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 import { GameSocket, type ConnectionStatus } from "../api/socket";
 import type { GameEvent, GameState, PlayerState, Role } from "../api/types";
+import { recordMove, resetMoves } from "../lib/movement";
 
 type Listener = (event: GameEvent, state: GameState) => void;
 
@@ -25,9 +26,11 @@ let socket: GameSocket | null = null;
 const listeners = new Set<Listener>();
 
 /** Подписка на события игры — для анимаций и звуков. Возвращает функцию отписки. */
-export function onGameEvent(listener: Listener) {
+export function onGameEvent(listener: Listener): () => void {
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  return () => {
+    listeners.delete(listener);
+  };
 }
 
 export const useGame = create<GameStore>((set, get) => {
@@ -45,6 +48,7 @@ export const useGame = create<GameStore>((set, get) => {
 
     connect(code, token) {
       get().disconnect();
+      resetMoves();
       set({ state: null, role: null, playerId: null, closeCode: null, error: null });
       socket = new GameSocket(GameSocket.url(code, token), {
         onStatus: (connection, closeCode) => set({ connection, closeCode: closeCode ?? null }),
@@ -57,6 +61,7 @@ export const useGame = create<GameStore>((set, get) => {
               set({ state: message.state });
               break;
             case "event":
+              recordMove(message.event); // до подписчиков: им нужно расписание хода
               set({ state: message.state });
               listeners.forEach((l) => l(message.event, message.state));
               break;

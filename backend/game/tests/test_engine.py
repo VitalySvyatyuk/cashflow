@@ -337,7 +337,7 @@ def test_sell_wrong_asset_rejected(started, petya):
 # --- Благотворительность ---------------------------------------------------------------
 
 
-def test_charity_gives_extra_dice(started, masha):
+def test_charity(started, masha):
     masha.cash = 100000
     masha.save()
     place(masha, cell_position(CellKind.CHARITY) - 1)
@@ -348,16 +348,27 @@ def test_charity_gives_extra_dice(started, masha):
     cash = fresh(masha).cash
     approve(started, act(started, masha, "charity"))
     assert fresh(masha).cash == cash - amount
-    assert masha.charity_turns == 3
+    assert fresh(started).phase == Game.Phase.END_TURN
 
-    started.phase = Game.Phase.ROLL
-    started.save()
-    with pytest.raises(GameError, match="от 1 до 2"):
-        act(started, masha, "roll", rnd=Dice(1, 1, 1), dice=3)
+
+@pytest.mark.parametrize("count", [1, 2, 3])
+def test_player_chooses_dice_count(started, masha, count):
     place(masha, 0)
-    act(started, masha, "roll", rnd=Dice(1, 1), dice=2)
-    assert fresh(started).dice == [1, 1]
-    assert fresh(masha).charity_turns == 2
+    act(started, masha, "roll", rnd=Dice(*[1] * count), dice=count)
+    assert fresh(started).dice == [1] * count
+    assert fresh(masha).position == count
+
+
+@pytest.mark.parametrize("count", [0, 4])
+def test_dice_count_limits(started, masha, count):
+    with pytest.raises(GameError):
+        act(started, masha, "roll", rnd=Dice(1, 1, 1, 1), dice=count)
+
+
+def test_default_dice_count_by_track(started, masha):
+    place(masha, 0)
+    act(started, masha, "roll", rnd=Dice(1))
+    assert len(fresh(started).dice) == 1
 
 
 # --- Кредиты ---------------------------------------------------------------------------

@@ -1,71 +1,54 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { Track } from "../../api/types";
+import { moveFor } from "../../lib/movement";
+import { STEP_MS } from "../../lib/timing";
 import { onGameEvent } from "../../store/game";
-
-export const STEP_MS = 280;
 
 export interface Spot {
   track: Track;
   position: number;
 }
 
-interface MovedPayload {
-  track: Track;
-  start: number;
-  path: number[];
-}
-
 /**
  * Пошаговое движение фишек. Сервер сразу присылает конечную позицию,
- * а здесь фишка «шагает» по клеткам из события moved.
- * Возвращает позиции, которые нужно показывать вместо настоящих, пока идёт анимация,
- * и функцию: через сколько мс фишка игрока дойдёт до конца.
+ * а здесь фишка стоит на старте, пока падают кубики, и «шагает» по клеткам
+ * по расписанию из lib/movement. Возвращает позиции, которые нужно показывать
+ * вместо настоящих, пока идёт анимация.
  */
 export function useTokenSteps() {
   const [overrides, setOverrides] = useState<Record<number, Spot>>({});
-  const queues = useRef(new Map<number, Spot[]>());
-  const timers = useRef(new Map<number, number>());
 
   useEffect(() => {
-    const tick = (playerId: number) => {
-      const queue = queues.current.get(playerId) ?? [];
-      const next = queue.shift();
-      if (!next) {
-        window.clearInterval(timers.current.get(playerId));
-        timers.current.delete(playerId);
-        setOverrides(({ [playerId]: _, ...rest }) => rest);
-        return;
-      }
-      setOverrides((o) => ({ ...o, [playerId]: next }));
-    };
+    const timers: number[] = [];
+    const at = (time: number, fn: () => void) =>
+      timers.push(window.setTimeout(fn, Math.max(0, time - Date.now())));
 
     const unsubscribe = onGameEvent((event) => {
-      if (event.kind !== "moved" || event.player_id == null) return;
-      const { track, start, path } = event.payload as unknown as MovedPayload;
-      const playerId = event.player_id;
-      const queue = queues.current.get(playerId) ?? [];
-      if (!timers.current.has(playerId)) {
-        // Держим фишку на старте, пока не начнётся анимация.
-        setOverrides((o) => ({ ...o, [playerId]: { track, position: start } }));
-        timers.current.set(
-          playerId,
-          window.setInterval(() => tick(playerId), STEP_MS),
-        );
-      }
-      queues.current.set(playerId, [...queue, ...path.map((position) => ({ track, position }))]);
+      const move = event.kind === "moved" ? moveFor(event.seq) : undefined;
+      if (!move) return;
+      const { playerId, track, start, path, startAt } = move;
+      const show = (position: number) => setOverrides((o) => ({ ...o, [playerId]: { track, position } }));
+
+      // Держим фишку на старте, пока падают кубики. Если она ещё идёт
+      // предыдущий ход, то сама придёт на старт этого.
+      if (!move.queued) show(start);
+      path.forEach((position, i) => at(startAt + i * STEP_MS, () => show(position)));
+      at(move.arrival, () =>
+        setOverrides((o) => {
+          // Если за это время начался ещё один ход — не трогаем.
+          if (o[playerId]?.position !== path[path.length - 1]) return o;
+          const { [playerId]: _, ...rest } = o;
+          return rest;
+        }),
+      );
     });
 
-    const activeTimers = timers.current;
     return () => {
       unsubscribe();
-      activeTimers.forEach((t) => window.clearInterval(t));
-      activeTimers.clear();
+      timers.forEach((t) => window.clearTimeout(t));
     };
   }, []);
 
-  const remainingMs = (playerId: number) =>
-    ((queues.current.get(playerId)?.length ?? 0) + 1) * STEP_MS;
-
-  return { overrides, remainingMs };
+  return overrides;
 }
