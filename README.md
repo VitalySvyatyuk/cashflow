@@ -19,7 +19,7 @@ docker-compose.yml   PostgreSQL 16 и Redis 7 для разработки
 ```sh
 make up          # создаёт .env из .env.example, поднимает frontend + backend + postgres + redis
 make superuser   # создать ведущего (суперпользователя)
-make seed        # профессии, карточки и клетки поля (временные данные)
+make seed        # добавить тестовые профессии, карточки и клетки (ничего не удаляет)
 make logs        # логи
 make down        # остановить
 ```

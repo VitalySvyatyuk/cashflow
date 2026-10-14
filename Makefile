@@ -1,4 +1,4 @@
-.PHONY: env up down logs psql venv test test-all lint fmt typecheck test-frontend migrate makemigrations seed superuser shell
+.PHONY: env up down logs psql venv test test-all lint fmt typecheck test-frontend migrate makemigrations seed seed-reset superuser shell
 
 VENV := .venv/bin
 MANAGE := docker compose exec backend python manage.py
@@ -47,7 +47,13 @@ migrate:
 makemigrations:
 	$(MANAGE) makemigrations
 
+# Добавляет недостающие тестовые данные, ничего не удаляя.
 seed:
+	$(MANAGE) seed
+
+# ОСТОРОЖНО: удаляет ВСЕ карточки и клетки (в том числе введённые вручную) и создаёт тестовые.
+seed-reset:
+	@read -p "Удалить все карточки и клетки поля? Введите yes: " ans && [ "$$ans" = yes ]
 	$(MANAGE) seed --reset
 
 superuser:
