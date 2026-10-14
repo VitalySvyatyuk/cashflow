@@ -1,0 +1,27 @@
+# Окружение
+.env
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Django
+backend/staticfiles/
+backend/media/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+*.log
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
