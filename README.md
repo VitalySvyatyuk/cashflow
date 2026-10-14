@@ -106,7 +106,8 @@ Vite проксирует `/api`, `/ws`, `/admin` на бэкенд — брау
 
 ```sh
 make venv    # один раз
-make test
+make test        # быстрые тесты (~1 мин)
+make test-all    # плюс полные партии ботом (~2,5 мин)
 make lint    # make fmt — автоисправление
 make typecheck       # проверка типов фронтенда (в контейнере)
 make test-frontend   # тесты фронтенда (Vitest, в контейнере)

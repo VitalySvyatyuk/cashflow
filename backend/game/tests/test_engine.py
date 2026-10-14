@@ -555,3 +555,20 @@ def test_actions_registry_is_consistent():
         assert action.policy in (engine.AUTO, engine.APPROVE, engine.HOST), kind
         if action.policy == engine.APPROVE:
             assert action.describe is not None, kind
+
+
+def test_engine_rereads_stale_player(started, masha):
+    """Проверки правил идут по свежим данным, а не по устаревшему объекту."""
+    stale = started.players.get(id=masha.id)
+    masha.cash = 0
+    masha.save()
+    open_card(started, stock_card(price=1))
+    with pytest.raises(GameError, match="Не хватает"):
+        act(started, stale, "buy", quantity=1)
+
+
+def test_player_from_other_game_rejected(started, host):
+    other = lobby.create_game(host, 2)
+    stranger = lobby.join_game(other, "Чужой")
+    with pytest.raises(GameError, match="нет в этой игре"):
+        act(started, stranger, "take_loan", amount=1000)

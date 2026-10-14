@@ -212,7 +212,10 @@ def _check_status(game, actor, action):
 
 def _resolve_player(game, actor, action, params):
     if not actor.is_host:
-        player = actor.player
+        # Перечитываем из БД: объект снаружи мог устареть (деньги изменились).
+        player = game.players.filter(pk=actor.player.pk).first()
+        if player is None:
+            raise GameError("Вас нет в этой игре.")
     elif "player_id" in params:
         player = game.players.filter(id=parse_int(params["player_id"], "player_id")).first()
         if player is None:

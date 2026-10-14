@@ -1,4 +1,4 @@
-.PHONY: env up down logs psql venv test lint fmt typecheck test-frontend migrate makemigrations seed superuser shell
+.PHONY: env up down logs psql venv test test-all lint fmt typecheck test-frontend migrate makemigrations seed superuser shell
 
 VENV := .venv/bin
 MANAGE := docker compose exec backend python manage.py
@@ -25,6 +25,9 @@ venv:
 
 test:
 	cd backend && ../$(VENV)/pytest
+
+test-all:
+	cd backend && ../$(VENV)/pytest -m ""
 
 lint:
 	cd backend && ../$(VENV)/ruff check . && ../$(VENV)/ruff format --check .

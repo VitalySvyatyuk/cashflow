@@ -284,6 +284,7 @@ class Asset(models.Model):
     class Meta:
         verbose_name = "актив"
         verbose_name_plural = "активы"
+        ordering = ["id"]  # иначе Postgres отдаёт изменённые строки в конце
 
     def __str__(self):
         return self.title
@@ -309,6 +310,7 @@ class Liability(models.Model):
     class Meta:
         verbose_name = "пассив"
         verbose_name_plural = "пассивы"
+        ordering = ["id"]
 
     def __str__(self):
         return self.title
