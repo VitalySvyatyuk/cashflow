@@ -398,7 +398,7 @@ def _land(ctx, cell):
                     "baby",
                     player=player,
                     children=player.children,
-                    text=f"У {player.name} родился ребёнок!",
+                    text=f"{player.name}: родился ребёнок!",
                 )
             _set_phase(game, Game.Phase.END_TURN)
         case CellKind.DOWNSIZED:

@@ -96,16 +96,23 @@ export function HostControls({ state }: { state: GameState }) {
         className={paused ? "ok" : "warn"}
         onClick={() => action(paused ? "resume" : "pause")}
         disabled={state.status === "finished"}
+        title={paused ? "Разморозить игру" : "Заморозить игру"}
       >
-        {paused ? "▶ Разморозить" : "❄ Заморозить"}
+        {paused ? "▶" : "❄"} <span className="label">{paused ? "Разморозить" : "Заморозить"}</span>
       </button>
       <button onClick={() => action("undo")} title="Отменить последнее действие">
-        ↶ Отменить
+        ↶ <span className="label">Отменить</span>
       </button>
-      <button onClick={() => action("next_turn")} disabled={state.status === "finished"}>
-        ⏭ Передать ход
+      <button
+        onClick={() => action("next_turn")}
+        disabled={state.status === "finished"}
+        title="Передать ход следующему игроку"
+      >
+        ⏭ <span className="label">Передать ход</span>
       </button>
-      <button onClick={() => setAdjusting(true)}>$ Деньги</button>
+      <button onClick={() => setAdjusting(true)} title="Начислить или списать деньги">
+        $ <span className="label">Деньги</span>
+      </button>
       {adjusting && <AdjustCash state={state} onClose={() => setAdjusting(false)} />}
     </div>
   );
