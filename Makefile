@@ -1,4 +1,4 @@
-.PHONY: env up down logs psql venv test lint fmt migrate makemigrations superuser shell
+.PHONY: env up down logs psql venv test lint fmt migrate makemigrations seed superuser shell
 
 VENV := .venv/bin
 MANAGE := docker compose exec backend python manage.py
@@ -37,6 +37,9 @@ migrate:
 
 makemigrations:
 	$(MANAGE) makemigrations
+
+seed:
+	$(MANAGE) seed --reset
 
 superuser:
 	$(MANAGE) createsuperuser

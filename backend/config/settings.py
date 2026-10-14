@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "channels",
     "rest_framework",
     "core",
+    "game",
 ]
 
 MIDDLEWARE = [
