@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { useEffect, useState, type ReactNode } from "react";
+import { Children, useEffect, useState, type ReactNode } from "react";
 
 import { useBoard } from "../../api/board";
 import type { BoardCell, GameState, PlayerState, Track } from "../../api/types";
@@ -97,9 +97,11 @@ export function Board({ state, meId, children }: Props) {
         )}
 
         <circle cx={CENTER} cy={CENTER} r={RINGS.rat_race.inner - 12} className="board-center" />
-        <text x={CENTER} y={CENTER} dy="0.35em" className="board-title">
-          ДЕНЕЖНЫЙ ПОТОК
-        </text>
+        {Children.toArray(children).length === 0 && (
+          <text x={CENTER} y={CENTER} dy="0.35em" className="board-title">
+            ДЕНЕЖНЫЙ ПОТОК
+          </text>
+        )}
 
         {spots.map(({ player, spot }) => {
           const group = groups.get(`${spot.track}:${spot.position}`)!;

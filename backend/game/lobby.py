@@ -34,7 +34,12 @@ def create_game(host, max_players):
         raise LobbyError(f"Игроков может быть от 1 до {MAX_PLAYERS}.")
     with transaction.atomic():
         game = Game.objects.create(host=host, max_players=max_players)
-        log_event(game, "game_created", max_players=max_players)
+        log_event(
+            game,
+            "game_created",
+            max_players=max_players,
+            text=f"Игра создана на {max_players} игроков",
+        )
     return game
 
 
@@ -58,7 +63,7 @@ def join_game(game, name):
         taken = {p.seat for p in players}
         seat = min(s for s in range(MAX_PLAYERS) if s not in taken)
         player = Player.objects.create(game=game, name=name, seat=seat, color=PLAYER_COLORS[seat])
-        log_event(game, "player_joined", player=player, name=name)
+        log_event(game, "player_joined", player=player, name=name, text=f"{name} входит в игру")
     return player
 
 
@@ -68,7 +73,13 @@ def remove_player(game, player):
         game = _lock(game)
         if game.status != Game.Status.LOBBY:
             raise LobbyError("После старта игроков убрать нельзя.")
-        log_event(game, "player_left", player_id=player.id, name=player.name)
+        log_event(
+            game,
+            "player_left",
+            player_id=player.id,
+            name=player.name,
+            text=f"{player.name} выходит из игры",
+        )
         player.delete()
 
 
@@ -106,6 +117,8 @@ def start_game(game, rnd=random):
             game,
             "game_started",
             professions={p.name: p.profession.name for p in players},
+            text="Игра началась! "
+            + ", ".join(f"{p.name} — {p.profession.name.lower()}" for p in players),
         )
     return game
 

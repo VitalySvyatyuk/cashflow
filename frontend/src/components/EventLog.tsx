@@ -4,7 +4,11 @@ import type { GameEvent } from "../api/types";
 
 export function EventLog({ events }: { events: GameEvent[] }) {
   const end = useRef<HTMLDivElement>(null);
-  useEffect(() => end.current?.scrollIntoView({ block: "end" }), [events.length]);
+  useEffect(() => {
+    // Тело в скобках: в новых браузерах scrollIntoView возвращает Promise,
+    // а React принимает из эффекта только функцию очистки.
+    end.current?.scrollIntoView({ block: "end" });
+  }, [events.length]);
 
   return (
     <div className="log">
