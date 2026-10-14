@@ -2,7 +2,8 @@
 
 from rest_framework import serializers
 
-from game.models import Asset, Game, GameEvent, Liability, PendingAction, Player
+from game.finance import statement
+from game.models import Asset, BoardCell, Card, Game, GameEvent, Liability, PendingAction, Player
 
 RECENT_EVENTS = 50
 
@@ -10,7 +11,7 @@ RECENT_EVENTS = 50
 class AssetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Asset
-        fields = ["id", "kind", "title", "quantity", "cost", "cashflow"]
+        fields = ["id", "kind", "title", "key", "quantity", "cost", "cashflow"]
 
 
 class LiabilitySerializer(serializers.ModelSerializer):
@@ -21,6 +22,7 @@ class LiabilitySerializer(serializers.ModelSerializer):
 
 class PlayerStateSerializer(serializers.ModelSerializer):
     profession = serializers.SerializerMethodField()
+    statement = serializers.SerializerMethodField()
     assets = AssetSerializer(many=True, read_only=True)
     liabilities = LiabilitySerializer(many=True, read_only=True)
 
@@ -38,9 +40,14 @@ class PlayerStateSerializer(serializers.ModelSerializer):
             "children",
             "charity_turns",
             "skip_turns",
+            "fast_track_income",
+            "statement",
             "assets",
             "liabilities",
         ]
+
+    def get_statement(self, player):
+        return statement(player).as_dict()
 
     def get_profession(self, player):
         p = player.profession
@@ -58,7 +65,19 @@ class PlayerStateSerializer(serializers.ModelSerializer):
 class PendingActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = PendingAction
-        fields = ["id", "player_id", "kind", "payload", "status", "comment", "created_at"]
+        fields = ["id", "player_id", "kind", "payload", "description", "status", "created_at"]
+
+
+class CardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Card
+        fields = ["id", "category", "color", "title", "text", "effect"]
+
+
+class CellSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BoardCell
+        fields = ["id", "track", "position", "kind", "color", "title", "description", "effect"]
 
 
 class EventSerializer(serializers.ModelSerializer):
@@ -68,7 +87,7 @@ class EventSerializer(serializers.ModelSerializer):
 
 
 def build_state(game_id):
-    game = Game.objects.get(pk=game_id)
+    game = Game.objects.select_related("current_card").get(pk=game_id)
     players = game.players.select_related("profession").prefetch_related("assets", "liabilities")
     pending = game.pending_actions.filter(status=PendingAction.Status.PENDING)
     events = reversed(game.events.order_by("-seq")[:RECENT_EVENTS])
@@ -78,6 +97,10 @@ def build_state(game_id):
         "max_players": game.max_players,
         "turn_number": game.turn_number,
         "current_player_id": game.current_player_id,
+        "phase": game.phase,
+        "dice": game.dice,
+        "current_card": CardSerializer(game.current_card).data if game.current_card else None,
+        "winner_id": game.winner_id,
         "players": PlayerStateSerializer(players, many=True).data,
         "pending_actions": PendingActionSerializer(pending, many=True).data,
         "events": EventSerializer(events, many=True).data,
@@ -86,3 +109,7 @@ def build_state(game_id):
 
 def serialize_event(event):
     return EventSerializer(event).data
+
+
+def build_board():
+    return CellSerializer(BoardCell.objects.order_by("track", "position"), many=True).data

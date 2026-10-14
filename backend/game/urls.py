@@ -3,6 +3,7 @@ from django.urls import path
 from game import views
 
 urlpatterns = [
+    path("board/", views.board, name="board"),
     path("games/", views.games, name="games"),
     path("games/<str:code>/", views.game_detail, name="game-detail"),
     path("games/<str:code>/join/", views.join, name="game-join"),

@@ -5,6 +5,7 @@ import random
 from django.db import transaction
 from django.utils import timezone
 
+from game.errors import GameError
 from game.events import log_event
 from game.models import (
     MAX_PLAYERS,
@@ -21,8 +22,7 @@ from game.models import (
 MAX_NAME_LENGTH = 40
 
 
-class LobbyError(Exception):
-    """Ошибка, текст которой можно показать пользователю."""
+LobbyError = GameError
 
 
 def _lock(game):
@@ -100,6 +100,7 @@ def start_game(game, rnd=random):
         game.started_at = timezone.now()
         game.turn_number = 1
         game.current_player = players[0]
+        game.phase = Game.Phase.ROLL
         game.save()
         log_event(
             game,

@@ -131,6 +131,15 @@ class Game(models.Model):
         PAUSED = "paused", "Заморожена"
         FINISHED = "finished", "Завершена"
 
+    class Phase(models.TextChoices):
+        ROLL = "roll", "Бросок кубиков"
+        CHOOSE_DEAL = "choose_deal", "Выбор сделки"
+        CARD = "card", "Открыта карточка"
+        CHARITY = "charity", "Благотворительность"
+        BUSINESS = "business", "Покупка бизнеса"
+        DREAM = "dream", "Покупка мечты"
+        END_TURN = "end_turn", "Завершение хода"
+
     # Уникален только среди незавершённых игр — кодов всего 10 000.
     code = models.CharField("код", max_length=GAME_CODE_LENGTH, db_index=True)
     host = models.ForeignKey(
@@ -154,6 +163,24 @@ class Game(models.Model):
         verbose_name="чей ход",
     )
     turn_number = models.PositiveIntegerField("номер хода", default=0)
+    phase = models.CharField("фаза хода", max_length=20, choices=Phase.choices, default=Phase.ROLL)
+    dice = models.JSONField("последний бросок", default=list, blank=True)
+    current_card = models.ForeignKey(
+        "Card",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name="открытая карточка",
+    )
+    winner = models.ForeignKey(
+        "Player",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name="победитель",
+    )
     created_at = models.DateTimeField("создана", auto_now_add=True)
     started_at = models.DateTimeField("начата", null=True, blank=True)
     finished_at = models.DateTimeField("завершена", null=True, blank=True)
@@ -216,6 +243,8 @@ class Player(models.Model):
     children = models.PositiveSmallIntegerField("дети", default=0)
     charity_turns = models.PositiveSmallIntegerField("ходов с благотворительностью", default=0)
     skip_turns = models.PositiveSmallIntegerField("пропустить ходов", default=0)
+    # Доход в «День денежного потока» на скоростной дорожке.
+    fast_track_income = models.PositiveIntegerField("доход скоростной дорожки", default=0)
     joined_at = models.DateTimeField("подключился", auto_now_add=True)
 
     class Meta:
@@ -243,6 +272,8 @@ class Asset(models.Model):
     )
     kind = models.CharField("тип", max_length=20, choices=Kind.choices)
     title = models.CharField("название", max_length=200)
+    # Тикер акции или тип объекта («Дом 3/2») — по нему карточки рынка находят активы.
+    key = models.CharField("ключ", max_length=100, blank=True, db_index=True)
     quantity = models.PositiveIntegerField("количество", default=1)
     cost = models.PositiveIntegerField("стоимость", default=0)
     cashflow = models.IntegerField("денежный поток в месяц", default=0)
@@ -321,6 +352,7 @@ class PendingAction(models.Model):
     )
     kind = models.CharField("действие", max_length=40)
     payload = models.JSONField("параметры", default=dict, blank=True)
+    description = models.CharField("описание", max_length=300, blank=True)
     status = models.CharField(
         "статус", max_length=20, choices=Status.choices, default=Status.PENDING
     )
@@ -335,6 +367,25 @@ class PendingAction(models.Model):
 
     def __str__(self):
         return f"{self.player}: {self.kind} ({self.get_status_display()})"
+
+
+class GameSnapshot(models.Model):
+    """Состояние игры перед действием — для отмены последнего действия ведущим."""
+
+    game = models.ForeignKey(
+        Game, on_delete=models.CASCADE, related_name="snapshots", verbose_name="игра"
+    )
+    label = models.CharField("перед действием", max_length=100)
+    data = models.JSONField("данные")
+    created_at = models.DateTimeField("время", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "снимок"
+        verbose_name_plural = "снимки"
+        ordering = ["game", "-id"]
+
+    def __str__(self):
+        return f"{self.game}: {self.label}"
 
 
 class GameEvent(models.Model):

@@ -16,6 +16,7 @@ from game.serializers import (
     JoinSerializer,
     OwnPlayerSerializer,
 )
+from game.state import build_board
 
 
 def _game(code):
@@ -93,3 +94,10 @@ def kick(request, code, player_id):
 def start(request, code):
     game = _run(lobby.start_game, _game(code))
     return _game_response(game)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def board(request):
+    """Клетки поля: обе дорожки по порядку."""
+    return Response(build_board())

@@ -104,3 +104,59 @@ async def test_ping_and_sync(game):
     await ws.send_json_to({"type": "nonsense"})
     assert (await ws.receive_json_from())["type"] == "error"
     await ws.disconnect()
+
+
+async def receive_until(ws, kind):
+    while True:
+        message = await ws.receive_json_from()
+        if message.get("type") == "event" and message["event"]["kind"] == kind:
+            return message
+
+
+async def test_actions_over_websocket(game, host, seeded):
+    masha = await sync_to_async(lobby.join_game)(game, "Маша")
+    await sync_to_async(lobby.start_game)(game)
+    player_ws = await connect(f"/ws/games/{game.code}/?token={masha.token}")
+    host_ws = await connect(f"/ws/games/{game.code}/", headers=[await host_cookie(host)])
+    await player_ws.receive_json_from()
+    await host_ws.receive_json_from()
+
+    # Ошибка приходит только отправителю
+    await player_ws.send_json_to({"type": "action", "kind": "end_turn"})
+    assert (await player_ws.receive_json_from()) == {
+        "type": "error",
+        "message": "Сейчас это сделать нельзя.",
+    }
+
+    # Заявка на кредит → ведущий видит её в состоянии → одобряет
+    await player_ws.send_json_to(
+        {"type": "action", "kind": "take_loan", "params": {"amount": 1000}}
+    )
+    requested = await receive_until(host_ws, "action_requested")
+    [pending] = requested["state"]["pending_actions"]
+    assert pending["description"] == "взять кредит $1 000"
+
+    await player_ws.send_json_to({"type": "decide", "id": pending["id"], "approve": True})
+    assert await receive_until(player_ws, "action_requested")  # своё же событие
+    error = await player_ws.receive_json_from()
+    assert error == {"type": "error", "message": "Это может сделать только ведущий."}
+
+    await host_ws.send_json_to({"type": "decide", "id": pending["id"], "approve": True})
+    taken = await receive_until(host_ws, "loan_taken")
+    assert taken["state"]["pending_actions"] == []
+    me = next(p for p in taken["state"]["players"] if p["id"] == masha.id)
+    assert any(li["title"] == "Банковский кредит" for li in me["liabilities"])
+
+    await player_ws.disconnect()
+    await host_ws.disconnect()
+
+
+async def test_host_pause_over_websocket(game, host, seeded):
+    await sync_to_async(lobby.join_game)(game, "Маша")
+    await sync_to_async(lobby.start_game)(game)
+    host_ws = await connect(f"/ws/games/{game.code}/", headers=[await host_cookie(host)])
+    await host_ws.receive_json_from()
+    await host_ws.send_json_to({"type": "action", "kind": "pause"})
+    paused = await receive_until(host_ws, "paused")
+    assert paused["state"]["status"] == "paused"
+    await host_ws.disconnect()
