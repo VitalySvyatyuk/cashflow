@@ -6,13 +6,14 @@ import { moveFor, msUntilArrival } from "./movement";
 import { preloadSounds, play, type SoundName } from "./sound";
 import { STEP_MS } from "./timing";
 
-const MONEY_IN = new Set(["payday", "sold", "loan_taken"]);
+// Всё, что связано с деньгами, звенит монетами: поступление и списание — по-разному.
+const MONEY_IN = new Set(["payday", "sold", "loan_taken", "auto_loan"]);
 const MONEY_OUT = new Set(["paid", "bought", "charity", "downsized", "loan_repaid"]);
 
 /** Звуки игры. Всё, что связано с ходом фишки, звучит, когда фишка дошла. */
 export function useGameSounds(role: Role | null, playerId: number | null) {
   useEffect(() => {
-    preloadSounds(["dice-1", "dice-2", "dice-3", "step", "income", "expense", "card"]);
+    preloadSounds(["dice-1", "dice-2", "dice-3", "step", "coins-in", "coins-out", "page-flip"]);
   }, []);
 
   useEffect(() => {
@@ -35,7 +36,10 @@ export function useGameSounds(role: Role | null, playerId: number | null) {
           return;
         }
         case "card_drawn":
-          return play("card", { delay: afterMove });
+          // Карточка открывается, когда фишка дошла, — как перелистнуть страницу журнала.
+          return play("page-flip", { volume: 0.7, delay: afterMove });
+        case "cash_adjusted":
+          return play((event.payload.amount as number) > 0 ? "coins-in" : "coins-out");
         case "turn_started":
           if (mine) play("your-turn", { delay: afterMove });
           return;
@@ -55,8 +59,8 @@ export function useGameSounds(role: Role | null, playerId: number | null) {
         case "game_won":
           return play("win", { delay: afterMove });
       }
-      if (MONEY_IN.has(event.kind)) play("income", { delay: afterMove });
-      else if (MONEY_OUT.has(event.kind)) play("expense", { delay: afterMove });
+      if (MONEY_IN.has(event.kind)) play("coins-in", { delay: afterMove });
+      else if (MONEY_OUT.has(event.kind)) play("coins-out", { delay: afterMove });
     });
   }, [role, playerId]);
 
