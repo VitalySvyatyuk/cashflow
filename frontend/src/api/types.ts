@@ -125,6 +125,8 @@ export interface GameState {
   paydays: number;
   /** Кто-то отказался от недвижимости или бизнеса — сделка предложена этому игроку. */
   offer_player_id: number | null;
+  /** Открыты акции: у этих игроков они есть — ждём, продадут или откажутся. */
+  stock_waiting: number[];
   current_card: Card | null;
   winner_id: number | null;
   players: PlayerState[];

@@ -96,6 +96,9 @@ class Bot:
                 if not self.try_act(player, "buy_dream"):
                     self.act(player, "pass")
             elif phase == Game.Phase.END_TURN:
+                # Владельцы акций с карточки, которые не продали, отказываются.
+                for holder in game.players.filter(id__in=game.stock_waiting):
+                    self.act(holder, "decline_sell")
                 self.finish_turn(player)
                 return
         raise AssertionError(f"ход застрял в фазе {game.phase}")

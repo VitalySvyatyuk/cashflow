@@ -43,7 +43,21 @@ export function PlayerActions({
     </button>
   );
 
+  const waitingNames = state.players
+    .filter((p) => state.stock_waiting.includes(p.id))
+    .map((p) => p.name)
+    .join(", ");
+
   const buttons = [];
+  if (state.stock_waiting.includes(me.id)) {
+    const symbol = (card?.effect as { symbol?: string } | undefined)?.symbol;
+    buttons.push(
+      <span key="stock-note" className="offer-note">
+        Продайте акции {symbol} на карточке или откажитесь:
+      </span>,
+    );
+    buttons.push(button("Отказаться", "decline_sell"));
+  }
   if (offered) {
     const owner = state.players.find((p) => p.id === state.current_player_id);
     buttons.push(
@@ -156,7 +170,22 @@ export function PlayerActions({
         buttons.push(button("Отказаться", "pass"));
         break;
       case "end_turn":
-        buttons.push(button("Завершить ход", "end_turn"));
+        if (state.stock_waiting.length) {
+          buttons.push(
+            <span key="waiting" className="muted">
+              Ждём решения по акциям: {waitingNames}
+            </span>,
+          );
+        }
+        buttons.push(
+          <button
+            key="end"
+            disabled={disabled || state.stock_waiting.length > 0}
+            onClick={() => action("end_turn")}
+          >
+            Завершить ход
+          </button>,
+        );
         break;
     }
   }

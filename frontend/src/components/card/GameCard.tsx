@@ -30,6 +30,12 @@ export function GameCard({ state, me }: { state: GameState; me: PlayerState | nu
   const [collapsed, setCollapsed] = useState(false);
   const drawer = state.players.find((p) => p.id === state.current_player_id);
   const offerTo = state.players.find((p) => p.id === state.offer_player_id);
+  const waiting = state.players.filter((p) => state.stock_waiting.includes(p.id)).map((p) => p.name);
+  // Акции из сделки продают тот, кто вытянул, и те, от кого ждут решения.
+  const canSell =
+    card.effect.type !== "stock" ||
+    me?.id === state.current_player_id ||
+    (me != null && state.stock_waiting.includes(me.id));
 
   if (collapsed) {
     return (
@@ -60,7 +66,10 @@ export function GameCard({ state, me }: { state: GameState; me: PlayerState | nu
         <CardNumbers effect={card.effect as Effect} />
         {drawer && <p className="muted small">Вытянул(а): {drawer.name}</p>}
         {offerTo && <p className="offer-note small">Предложено: {offerTo.name}</p>}
-        {me && state.status === "running" && <SellOptions card={card} me={me} />}
+        {waiting.length > 0 && (
+          <p className="offer-note small">Ждём решения по акциям: {waiting.join(", ")}</p>
+        )}
+        {me && state.status === "running" && canSell && <SellOptions card={card} me={me} />}
       </div>
     </motion.div>
   );

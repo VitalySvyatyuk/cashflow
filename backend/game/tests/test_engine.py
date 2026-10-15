@@ -470,13 +470,82 @@ def test_approval_fails_if_turn_moved_on(started, masha):
 # --- Продажа ---------------------------------------------------------------------------
 
 
-def test_other_player_sells_stock_on_card(started, masha, petya):
-    Asset.objects.create(player=petya, kind=Asset.Kind.STOCK, title="ТСТ", key="ТСТ", quantity=10)
-    open_card(started, stock_card(price=30))
+def draw_stock(game, player, price=30):
+    """Игрок выбирает малую сделку и вытягивает карточку акций ТСТ."""
+    card = stock_card(price=price)
+    deck = game.decks.get(category=CardCategory.SMALL_DEAL)
+    deck.card_ids, deck.next_index = [card.id], 0
+    deck.save()
+    game.phase = Game.Phase.CHOOSE_DEAL
+    game.save()
+    act(game, player, "choose_deal", size="small")
+    return card
+
+
+def give_stock(player, quantity=10):
+    return Asset.objects.create(
+        player=player, kind=Asset.Kind.STOCK, title="Акции ТСТ", key="ТСТ", quantity=quantity
+    )
+
+
+def test_stock_card_waits_for_holders(trio):
+    started, masha, petya, vasya = trio
+    give_stock(petya)
+    draw_stock(started, masha, price=30)
+    started.refresh_from_db()
+    assert started.stock_waiting == [petya.id]  # у Васи акций нет — его не ждём
+
+    act(started, masha, "buy", quantity=5)
+    assert fresh(started).phase == Game.Phase.END_TURN
+    with pytest.raises(GameError, match="Ждём решения по акциям: Петя"):
+        act(started, masha, "end_turn")
+
     cash = petya.cash
-    assert act(started, petya, "sell", asset_id=petya.assets.get().id, quantity=4) is None
-    assert fresh(petya).cash == cash + 120
-    assert petya.assets.get().quantity == 6
+    act(started, petya, "sell", asset_id=petya.assets.get().id, quantity=3)
+    assert fresh(petya).cash == cash + 90
+    assert petya.assets.get().quantity == 7
+    assert fresh(started).stock_waiting == []
+    act(started, masha, "end_turn")
+    assert fresh(started).current_player == petya
+
+
+def test_holder_declines_to_sell(started, masha, petya):
+    stock = give_stock(petya)
+    draw_stock(started, masha)
+    act(started, masha, "pass")
+    act(started, petya, "decline_sell")
+    assert fresh(started).stock_waiting == []
+    assert fresh(stock).quantity == 10
+    with pytest.raises(GameError, match="только пока"):
+        act(started, petya, "sell", asset_id=stock.id, quantity=1)
+    with pytest.raises(GameError, match="не ждут"):
+        act(started, petya, "decline_sell")
+    act(started, masha, "end_turn")
+
+
+def test_drawer_sells_own_stock_from_card(started, masha, petya):
+    stock = give_stock(masha, 4)
+    draw_stock(started, masha, price=30)
+    assert fresh(started).stock_waiting == []
+    cash = masha.cash
+    act(started, masha, "sell", asset_id=stock.id, quantity=4)
+    assert fresh(masha).cash == cash + 120
+    assert not masha.assets.exists()
+
+
+def test_next_turn_stops_waiting_for_stock(started, masha, petya):
+    give_stock(petya)
+    draw_stock(started, masha)
+    host(started, "next_turn")
+    assert fresh(started).stock_waiting == []
+
+
+def test_undo_restores_stock_waiting(started, masha, petya):
+    give_stock(petya)
+    draw_stock(started, masha)
+    act(started, petya, "decline_sell")
+    host(started, "undo")
+    assert fresh(started).stock_waiting == [petya.id]
 
 
 def test_sell_property_pays_off_mortgage(started, masha, petya):

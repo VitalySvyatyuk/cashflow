@@ -191,6 +191,8 @@ class Game(models.Model):
         related_name="+",
         verbose_name="кому предложена сделка",
     )
+    # Открыта карточка акций: у этих игроков есть такие акции, ждём, продадут или откажутся.
+    stock_waiting = models.JSONField("ждём решения по акциям", default=list, blank=True)
     current_card = models.ForeignKey(
         "Card",
         on_delete=models.SET_NULL,

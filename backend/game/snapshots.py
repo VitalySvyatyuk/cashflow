@@ -15,6 +15,7 @@ GAME_FIELDS = [
     "winner_id",
     "paydays",
     "offer_player_id",
+    "stock_waiting",
 ]
 PLAYER_FIELDS = [
     "track",

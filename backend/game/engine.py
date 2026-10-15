@@ -301,6 +301,7 @@ def _next_turn(game):
     game.turn_number += 1
     game.paydays = 0  # ведущий мог передать ход, пока доход не получен
     game.offer_player = None
+    game.stock_waiting = []
     game.dice = []
     game.current_card = None
     game.phase = Game.Phase.ROLL
@@ -559,8 +560,62 @@ def _parse_deal(params):
 
 def _run_choose_deal(ctx):
     category = CardCategory.SMALL_DEAL if ctx.params["size"] == "small" else CardCategory.BIG_DEAL
-    _draw(ctx, category)
+    card = _draw(ctx, category)
     _set_phase(ctx.game, Game.Phase.CARD)
+    if card.effect.get("type") == "stock":
+        _wait_for_stock_holders(ctx, card)
+
+
+def _wait_for_stock_holders(ctx, card):
+    """Акции на столе: у кого они есть, решают — продать по цене карточки или отказаться.
+    Пока все не решат, вытянувший карточку не может закончить ход."""
+    game, symbol = ctx.game, card.effect["symbol"]
+    holders = [
+        p
+        for p in game.players.exclude(id=game.current_player_id).order_by("seat")
+        if p.assets.filter(kind=Asset.Kind.STOCK, key=symbol, quantity__gt=0).exists()
+    ]
+    game.stock_waiting = [p.id for p in holders]
+    game.save(update_fields=["stock_waiting"])
+    if holders:
+        names = ", ".join(p.name for p in holders)
+        log_event(
+            game,
+            "stock_waiting",
+            text=f"Акции {symbol} есть у: {names} — продают по {_money(card.effect['price'])} "
+            "или отказываются",
+        )
+
+
+def _waiting_names(game):
+    names = dict(game.players.filter(id__in=game.stock_waiting).values_list("id", "name"))
+    return ", ".join(names[i] for i in game.stock_waiting if i in names)
+
+
+def _stop_waiting(game, player):
+    if player.id in game.stock_waiting:
+        game.stock_waiting = [i for i in game.stock_waiting if i != player.id]
+        game.save(update_fields=["stock_waiting"])
+
+
+def _check_decline_sell(ctx):
+    if ctx.player.id not in ctx.game.stock_waiting:
+        raise GameError("От вас решения не ждут.")
+
+
+def _run_decline_sell(ctx):
+    _stop_waiting(ctx.game, ctx.player)
+    log_event(
+        ctx.game,
+        "sell_declined",
+        player=ctx.player,
+        text=f"{ctx.player.name} не продаёт акции",
+    )
+
+
+def _check_end_turn(ctx):
+    if ctx.game.stock_waiting:
+        raise GameError(f"Ждём решения по акциям: {_waiting_names(ctx.game)}.")
 
 
 def _deal_card(ctx):
@@ -659,6 +714,12 @@ def _sell_offer(ctx):
     if asset is None:
         raise GameError("Актив не найден.")
     if effect.get("type") in ("stock", "stock_price"):
+        if (
+            effect["type"] == "stock"
+            and ctx.player.id != ctx.game.current_player_id
+            and ctx.player.id not in ctx.game.stock_waiting
+        ):
+            raise GameError("Продать акции можно, только пока от вас ждут решения.")
         if asset.kind != Asset.Kind.STOCK or asset.key != effect["symbol"]:
             raise GameError("Эта карточка не про эти акции.")
         if ctx.params["quantity"] > asset.quantity:
@@ -698,6 +759,7 @@ def _run_sell(ctx):
     else:
         asset.delete()  # ипотека удаляется вместе с объектом
     log_event(ctx.game, "sold", player=player, amount=net, text=text)
+    _stop_waiting(ctx.game, player)
 
 
 def _run_pay_card(ctx):
@@ -1093,7 +1155,17 @@ ACTIONS = {
         current_only=False,
         phase_bound=False,
     ),
-    "end_turn": Action("Конец хода", AUTO, _run_end_turn, phases=(P.END_TURN,), phase_bound=False),
+    "decline_sell": Action(
+        "Отказ от продажи",
+        AUTO,
+        _run_decline_sell,
+        _check_decline_sell,
+        current_only=False,
+        phases=CARD_OPEN,
+    ),
+    "end_turn": Action(
+        "Конец хода", AUTO, _run_end_turn, _check_end_turn, phases=(P.END_TURN,), phase_bound=False
+    ),
     # Только ведущий
     "pause": Action("Пауза", HOST, _run_pause, undoable=False, phase_bound=False),
     "resume": Action("Продолжение", HOST, _run_resume, undoable=False, phase_bound=False),
