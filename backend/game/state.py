@@ -115,8 +115,9 @@ class CardSerializer(serializers.ModelSerializer):
 class CellSerializer(serializers.ModelSerializer):
     # Код, название и цвет — из типа клетки (меняются в админке для всех клеток сразу).
     kind = serializers.CharField(source="cell_type.kind")
-    kind_name = serializers.CharField(source="cell_type.name")
+    kind_name = serializers.CharField(source="cell_type.get_kind_display")
     color = serializers.CharField(source="cell_type.color")
+    effect = serializers.DictField(read_only=True)
 
     class Meta:
         model = BoardCell

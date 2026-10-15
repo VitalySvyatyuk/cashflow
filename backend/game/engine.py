@@ -444,7 +444,7 @@ def _land(ctx, cell, announce=True):
         case CellKind.DREAM:
             _set_phase(game, Game.Phase.DREAM)
         case CellKind.LOSS:
-            amount = player.cash // 2
+            amount = player.cash * (cell.loss_percent or 50) // 100
             pay(player, amount, cell.title)
             log_event(
                 game,

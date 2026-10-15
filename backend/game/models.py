@@ -215,11 +215,10 @@ class CellKind(models.TextChoices):
 
 
 class CellType(models.Model):
-    """Тип клетки поля: название и цвет общие для всех клеток этого типа,
-    а код (kind) говорит движку, что происходит на клетке."""
+    """Тип клетки поля. Что происходит на клетке, задаёт движок по типу (kind),
+    а цвет общий для всех клеток этого типа и меняется в админке."""
 
-    kind = models.CharField("код", max_length=20, choices=CellKind.choices, unique=True)
-    name = models.CharField("название", max_length=100)
+    kind = models.CharField("тип", max_length=20, choices=CellKind.choices, unique=True)
     color = models.CharField("цвет", max_length=7, default="#757575")
 
     class Meta:
@@ -228,7 +227,16 @@ class CellType(models.Model):
         ordering = ["id"]
 
     def __str__(self):
-        return self.name
+        return self.get_kind_display()
+
+
+# Какие параметры нужны клетке каждого типа (у благотворительности — только в большом круге).
+CELL_KIND_FIELDS = {
+    CellKind.BUSINESS: ["cost", "cashflow"],
+    CellKind.DREAM: ["cost"],
+    CellKind.CHARITY: ["cost"],
+    CellKind.LOSS: ["loss_percent"],
+}
 
 
 class BoardCell(models.Model):
@@ -239,8 +247,27 @@ class BoardCell(models.Model):
     )
     title = models.CharField("название", max_length=200)
     description = models.TextField("описание", blank=True)
-    # Для клеток скоростной дорожки: стоимость бизнеса, прибавка к потоку и т.п.
-    effect = models.JSONField("эффект", default=dict, blank=True)
+
+    # Параметры для движка. Какие нужны — зависит от типа (см. CELL_KIND_FIELDS).
+    cost = models.PositiveIntegerField(
+        "стоимость",
+        null=True,
+        blank=True,
+        help_text="Бизнес, мечта, благотворительность в большом круге.",
+    )
+    cashflow = models.IntegerField(
+        "денежный поток в месяц",
+        null=True,
+        blank=True,
+        help_text="Бизнес: прибавка к доходу в День денежного потока.",
+    )
+    loss_percent = models.PositiveSmallIntegerField(
+        "потеря, % наличных",
+        null=True,
+        blank=True,
+        validators=[MaxValueValidator(100)],
+        help_text="Клетка «Потеря»: какую часть наличных теряет игрок.",
+    )
 
     class Meta:
         verbose_name = "клетка поля"
@@ -253,6 +280,19 @@ class BoardCell(models.Model):
     def __str__(self):
         return f"{self.get_track_display()} #{self.position}: {self.title}"
 
+    def clean(self):
+        if not self.cell_type_id:
+            return
+        kind = self.cell_type.kind
+        needed = CELL_KIND_FIELDS.get(kind, [])
+        if kind == CellKind.CHARITY and self.track != Track.FAST_TRACK:
+            needed = []  # в малом круге — 10% дохода игрока
+        errors = {
+            name: "Нужно для клетки этого типа." for name in needed if getattr(self, name) is None
+        }
+        if errors:
+            raise ValidationError(errors)
+
     @property
     def kind(self):
         return self.cell_type.kind
@@ -260,6 +300,12 @@ class BoardCell(models.Model):
     @property
     def color(self):
         return self.cell_type.color
+
+    @property
+    def effect(self):
+        """Параметры одним словарём — в таком виде их читают движок и экран."""
+        names = ("cost", "cashflow", "loss_percent")
+        return {name: getattr(self, name) for name in names if getattr(self, name) is not None}
 
 
 class GameQuerySet(models.QuerySet):

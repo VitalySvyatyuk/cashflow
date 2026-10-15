@@ -985,6 +985,16 @@ def test_fast_track_dream_wins_and_undo_reopens(started, masha):
     assert started.winner is None
 
 
+def test_loss_takes_percent_from_cell(started, masha):
+    position = cell_position(CellKind.LOSS, Track.FAST_TRACK)
+    BoardCell.objects.filter(track=Track.FAST_TRACK, position=position).update(loss_percent=30)
+    place(masha, position - 1, Track.FAST_TRACK)
+    masha.cash = 100_000
+    masha.save()
+    act(started, masha, "roll", rnd=Dice(1, 0))
+    assert fresh(masha).cash == 70_000
+
+
 def test_fast_track_business(started, masha):
     place(masha, cell_position(CellKind.BUSINESS, Track.FAST_TRACK) - 1, Track.FAST_TRACK)
     masha.cash = 10_000_000

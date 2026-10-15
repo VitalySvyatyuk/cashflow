@@ -361,7 +361,6 @@ def build_cells(seed=2026):
                 "kind": kind,
                 "title": title,
                 "description": description,
-                "effect": {},
             }
         )
 
@@ -375,26 +374,26 @@ def build_cells(seed=2026):
             flow = _round(cost * rnd.uniform(0.03, 0.08), 5000)
             title = next(businesses)
             description = f"Купите бизнес за {rub(cost)} — +{rub(flow)} в месяц."
-            effect = {"cost": cost, "cashflow": flow}
+            params = {"cost": cost, "cashflow": flow}
         elif kind == CellKind.DREAM:
             cost = _round(rnd.randint(1_000_000, 10_000_000), 500_000)
             title = next(dreams)
             description = f"Мечта стоит {rub(cost)}. Купите её и выиграйте."
-            effect = {"cost": cost}
+            params = {"cost": cost}
         elif kind == CellKind.LOSS:
             title = next(losses)
             description = "Потеряйте половину наличных."
-            effect = {"cash_share": 0.5}
+            params = {"loss_percent": 50}
         elif kind == CellKind.CHARITY:
             title = "Благотворительность"
             description = (
                 f"Пожертвуйте {rub(1_000_000)} — до конца игры можно бросать 1, 2 или 3 кубика."
             )
-            effect = {"cost": 1_000_000}
+            params = {"cost": 1_000_000}
         else:
             title = "День денежного потока"
             description = "Получите месячный денежный поток бизнесов."
-            effect = {}
+            params = {}
         cells.append(
             {
                 "track": Track.FAST_TRACK,
@@ -402,12 +401,12 @@ def build_cells(seed=2026):
                 "kind": kind,
                 "title": title,
                 "description": description,
-                "effect": effect,
             }
+            | params
         )
 
     return cells
 
 
 def build_cell_types():
-    return [{"kind": kind, "name": kind.label, "color": CELL_COLORS[kind]} for kind in CellKind]
+    return [{"kind": kind, "color": CELL_COLORS[kind]} for kind in CellKind]

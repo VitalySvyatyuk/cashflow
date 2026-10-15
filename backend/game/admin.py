@@ -6,6 +6,7 @@ from django.utils.html import format_html
 
 from game.models import (
     CARD_KIND_FIELDS,
+    CELL_KIND_FIELDS,
     Asset,
     BoardCell,
     Card,
@@ -90,7 +91,7 @@ class CardForm(forms.ModelForm):
             "cashflow",
             "amount",
         ]
-        # Какие поля показывать для выбранного типа — см. card_admin.js.
+        # Какие поля показывать для выбранного типа — см. kind_fields.js.
         widgets = {
             "kind": forms.Select(
                 attrs={
@@ -133,26 +134,61 @@ class CardAdmin(admin.ModelAdmin):
     ]
 
     class Media:
-        js = ["game/card_admin.js"]
+        js = ["game/kind_fields.js"]
 
 
 @admin.register(CellType)
 class CellTypeAdmin(admin.ModelAdmin):
-    list_display = ["name", color_swatch, "kind", "cell_count"]
+    list_display = ["kind", color_swatch, "cell_count"]
 
     def get_form(self, request, obj=None, **kwargs):
         return super().get_form(request, obj, widgets=COLOR_WIDGETS, **kwargs)
+
+    def get_readonly_fields(self, request, obj=None):
+        # Тип задаёт поведение клетки в движке — у существующей записи его не меняют.
+        return ["kind"] if obj else []
 
     @admin.display(description="клеток")
     def cell_count(self, obj):
         return obj.cells.count()
 
 
+class BoardCellForm(forms.ModelForm):
+    class Meta:
+        model = BoardCell
+        fields = ["track", "position", "cell_type", "title", "description"] + [
+            "cost",
+            "cashflow",
+            "loss_percent",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Какие параметры показывать для выбранного типа — см. kind_fields.js.
+        fields = {str(t.pk): CELL_KIND_FIELDS.get(t.kind, []) for t in CellType.objects.all()}
+        widget = self.fields["cell_type"].widget
+        getattr(widget, "widget", widget).attrs["data-kind-fields"] = json.dumps(fields)
+
+
 @admin.register(BoardCell)
 class BoardCellAdmin(admin.ModelAdmin):
+    form = BoardCellForm
     list_display = ["position", "track", "cell_type", color_swatch, "title"]
     list_filter = ["track", "cell_type"]
     list_select_related = ["cell_type"]
+    fieldsets = [
+        (None, {"fields": ["track", "position", "cell_type", "title", "description"]}),
+        (
+            "Параметры",
+            {
+                "description": "Показаны только поля, нужные для выбранного типа.",
+                "fields": ["cost", "cashflow", "loss_percent"],
+            },
+        ),
+    ]
+
+    class Media:
+        js = ["game/kind_fields.js"]
 
 
 class PlayerInline(admin.TabularInline):

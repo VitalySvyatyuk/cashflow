@@ -105,13 +105,26 @@ def test_seed_creates_categories_once():
 def test_cell_color_comes_from_its_type():
     call_command("seed", stdout=None)
     business = CellType.objects.get(kind=CellKind.BUSINESS)
-    business.name, business.color = "Своё дело", "#abcdef"
+    business.color = "#abcdef"
     business.save()
     call_command("seed", stdout=None)  # не затирает правки из админки
     cells = BoardCell.objects.filter(cell_type__kind=CellKind.BUSINESS)
     assert cells.count() > 1
     assert {c.color for c in cells} == {"#abcdef"}
-    assert {c.cell_type.name for c in cells} == {"Своё дело"}
+    assert str(business) == "Бизнес"
+
+
+def test_cell_params_by_type():
+    call_command("seed", stdout=None)
+    business = BoardCell.objects.filter(cell_type__kind=CellKind.BUSINESS).first()
+    assert set(business.effect) == {"cost", "cashflow"}
+    business.cashflow = None
+    with pytest.raises(ValidationError) as error:
+        business.full_clean()
+    assert "cashflow" in error.value.message_dict
+    # Благотворительность в малом круге считается от дохода — стоимость не нужна.
+    charity = BoardCell.objects.get(track=Track.RAT_RACE, cell_type__kind=CellKind.CHARITY)
+    charity.full_clean()
 
 
 def test_card_effect_from_fields():
