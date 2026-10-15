@@ -607,7 +607,7 @@ def test_sell_property_pays_off_mortgage(started, masha, petya):
     )
     open_card(started, offer)
     cash = petya.cash
-    approve(started, act(started, petya, "sell", asset_id=house.id))
+    assert act(started, petya, "sell", asset_id=house.id) is None  # без ведущего
     assert fresh(petya).cash == cash + 25000
     assert not petya.assets.exists()
     assert not Liability.objects.filter(id=mortgage.id).exists()

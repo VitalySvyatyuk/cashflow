@@ -1217,12 +1217,11 @@ ACTIONS = {
     ),
     "sell": Action(
         "Продажа",
-        APPROVE,
+        AUTO,
         _run_sell,
         lambda ctx: _sell_offer(ctx),
         _parse_sell,
         _describe_sell,
-        needs_approval=lambda ctx: _sell_offer(ctx)[0].kind != Asset.Kind.STOCK,
         current_only=False,
         phases=CARD_OPEN,
     ),
