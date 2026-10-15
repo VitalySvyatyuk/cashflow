@@ -387,7 +387,9 @@ def build_cells(seed=2026):
             effect = {"cash_share": 0.5}
         elif kind == CellKind.CHARITY:
             title = "Благотворительность"
-            description = f"Пожертвуйте {rub(1_000_000)} и бросайте 1–3 кубика 3 хода."
+            description = (
+                f"Пожертвуйте {rub(1_000_000)} — до конца игры можно бросать 1, 2 или 3 кубика."
+            )
             effect = {"cost": 1_000_000}
         else:
             title = "День денежного потока"
@@ -404,6 +406,8 @@ def build_cells(seed=2026):
             }
         )
 
-    for cell in cells:
-        cell["color"] = CELL_COLORS[cell["kind"]]
     return cells
+
+
+def build_cell_types():
+    return [{"kind": kind, "name": kind.label, "color": CELL_COLORS[kind]} for kind in CellKind]

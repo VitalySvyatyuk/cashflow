@@ -133,6 +133,8 @@ export interface BoardCell {
   track: Track;
   position: number;
   kind: string;
+  /** Название и цвет типа клетки — задаются в админке. */
+  kind_name: string;
   color: string;
   title: string;
   description: string;

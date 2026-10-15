@@ -113,9 +113,24 @@ class CardSerializer(serializers.ModelSerializer):
 
 
 class CellSerializer(serializers.ModelSerializer):
+    # Код, название и цвет — из типа клетки (меняются в админке для всех клеток сразу).
+    kind = serializers.CharField(source="cell_type.kind")
+    kind_name = serializers.CharField(source="cell_type.name")
+    color = serializers.CharField(source="cell_type.color")
+
     class Meta:
         model = BoardCell
-        fields = ["id", "track", "position", "kind", "color", "title", "description", "effect"]
+        fields = [
+            "id",
+            "track",
+            "position",
+            "kind",
+            "kind_name",
+            "color",
+            "title",
+            "description",
+            "effect",
+        ]
 
 
 class EventSerializer(serializers.ModelSerializer):
@@ -156,4 +171,5 @@ def serialize_event(event):
 
 
 def build_board():
-    return CellSerializer(BoardCell.objects.order_by("track", "position"), many=True).data
+    cells = BoardCell.objects.select_related("cell_type").order_by("track", "position")
+    return CellSerializer(cells, many=True).data

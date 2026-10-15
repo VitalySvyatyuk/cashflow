@@ -77,7 +77,9 @@ def place(player, position, track=Track.RAT_RACE):
 
 
 def cell_position(kind, track=Track.RAT_RACE):
-    return BoardCell.objects.filter(track=track, kind=kind).order_by("position")[0].position
+    return (
+        BoardCell.objects.filter(track=track, cell_type__kind=kind).order_by("position")[0].position
+    )
 
 
 def open_card(game, card, phase=Game.Phase.CARD):
@@ -163,9 +165,9 @@ def test_passing_paycheck_waits_for_collect(started, masha, petya):
 
 def test_two_paychecks_in_one_move(started, masha):
     cells = list(
-        BoardCell.objects.filter(track=Track.RAT_RACE, kind=CellKind.PAYCHECK).values_list(
-            "position", flat=True
-        )
+        BoardCell.objects.filter(
+            track=Track.RAT_RACE, cell_type__kind=CellKind.PAYCHECK
+        ).values_list("position", flat=True)
     )
     first, second = cells[0], cells[1]
     place(masha, first - 1)

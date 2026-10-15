@@ -1,12 +1,13 @@
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from game.models import BoardCell, Card, Category, Profession
+from game.models import BoardCell, Card, Category, CellType, Profession
 from game.seed_data import (
     PROFESSIONS,
     RENAMED_PROFESSIONS,
     build_cards,
     build_categories,
+    build_cell_types,
     build_cells,
 )
 
@@ -41,7 +42,13 @@ class Command(BaseCommand):
             Card.objects.update_or_create(
                 category=data["category"], title=data["title"], defaults=data
             )
+        # Типы клеток тоже не перезаписываем — название и цвет правят в админке.
+        cell_types = {
+            data["kind"]: CellType.objects.get_or_create(kind=data["kind"], defaults=data)[0]
+            for data in build_cell_types()
+        }
         for data in build_cells():
+            data["cell_type"] = cell_types[data.pop("kind")]
             BoardCell.objects.update_or_create(
                 track=data["track"], position=data["position"], defaults=data
             )

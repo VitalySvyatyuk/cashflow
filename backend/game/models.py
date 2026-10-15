@@ -214,11 +214,29 @@ class CellKind(models.TextChoices):
     LOSS = "loss", "Потеря"
 
 
+class CellType(models.Model):
+    """Тип клетки поля: название и цвет общие для всех клеток этого типа,
+    а код (kind) говорит движку, что происходит на клетке."""
+
+    kind = models.CharField("код", max_length=20, choices=CellKind.choices, unique=True)
+    name = models.CharField("название", max_length=100)
+    color = models.CharField("цвет", max_length=7, default="#757575")
+
+    class Meta:
+        verbose_name = "тип клетки"
+        verbose_name_plural = "типы клеток"
+        ordering = ["id"]
+
+    def __str__(self):
+        return self.name
+
+
 class BoardCell(models.Model):
     track = models.CharField("дорожка", max_length=20, choices=Track.choices)
     position = models.PositiveSmallIntegerField("позиция")
-    kind = models.CharField("тип", max_length=20, choices=CellKind.choices)
-    color = models.CharField("цвет", max_length=7)
+    cell_type = models.ForeignKey(
+        CellType, on_delete=models.PROTECT, related_name="cells", verbose_name="тип"
+    )
     title = models.CharField("название", max_length=200)
     description = models.TextField("описание", blank=True)
     # Для клеток скоростной дорожки: стоимость бизнеса, прибавка к потоку и т.п.
@@ -234,6 +252,14 @@ class BoardCell(models.Model):
 
     def __str__(self):
         return f"{self.get_track_display()} #{self.position}: {self.title}"
+
+    @property
+    def kind(self):
+        return self.cell_type.kind
+
+    @property
+    def color(self):
+        return self.cell_type.color
 
 
 class GameQuerySet(models.QuerySet):

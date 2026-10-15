@@ -10,6 +10,7 @@ from game.models import (
     BoardCell,
     Card,
     Category,
+    CellType,
     Game,
     GameEvent,
     Liability,
@@ -135,13 +136,23 @@ class CardAdmin(admin.ModelAdmin):
         js = ["game/card_admin.js"]
 
 
-@admin.register(BoardCell)
-class BoardCellAdmin(admin.ModelAdmin):
-    list_display = ["position", "track", "kind", color_swatch, "title"]
-    list_filter = ["track", "kind"]
+@admin.register(CellType)
+class CellTypeAdmin(admin.ModelAdmin):
+    list_display = ["name", color_swatch, "kind", "cell_count"]
 
     def get_form(self, request, obj=None, **kwargs):
         return super().get_form(request, obj, widgets=COLOR_WIDGETS, **kwargs)
+
+    @admin.display(description="клеток")
+    def cell_count(self, obj):
+        return obj.cells.count()
+
+
+@admin.register(BoardCell)
+class BoardCellAdmin(admin.ModelAdmin):
+    list_display = ["position", "track", "cell_type", color_swatch, "title"]
+    list_filter = ["track", "cell_type"]
+    list_select_related = ["cell_type"]
 
 
 class PlayerInline(admin.TabularInline):

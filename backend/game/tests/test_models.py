@@ -11,6 +11,8 @@ from game.models import (
     CardCategory,
     CardKind,
     Category,
+    CellKind,
+    CellType,
     Game,
     Player,
     Profession,
@@ -98,6 +100,18 @@ def test_seed_creates_categories_once():
     small.refresh_from_db()
     assert (small.name, small.color) == ("Мелочь", "#123456")
     assert Card.objects.filter(category=small).first().color == "#123456"
+
+
+def test_cell_color_comes_from_its_type():
+    call_command("seed", stdout=None)
+    business = CellType.objects.get(kind=CellKind.BUSINESS)
+    business.name, business.color = "Своё дело", "#abcdef"
+    business.save()
+    call_command("seed", stdout=None)  # не затирает правки из админки
+    cells = BoardCell.objects.filter(cell_type__kind=CellKind.BUSINESS)
+    assert cells.count() > 1
+    assert {c.color for c in cells} == {"#abcdef"}
+    assert {c.cell_type.name for c in cells} == {"Своё дело"}
 
 
 def test_card_effect_from_fields():

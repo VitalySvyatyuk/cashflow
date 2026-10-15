@@ -158,7 +158,7 @@ function Legend({ board }: { board: Record<Track, BoardCell[]> }) {
         <ul>
           {[...kinds.values()].map((c) => (
             <li key={c.kind}>
-              <span className="chip" style={{ background: c.color }} /> {KIND_NAMES[c.kind] ?? c.title}
+              <span className="chip" style={{ background: c.color }} /> {c.kind_name}
             </li>
           ))}
         </ul>
@@ -166,17 +166,3 @@ function Legend({ board }: { board: Record<Track, BoardCell[]> }) {
     </div>
   );
 }
-
-const KIND_NAMES: Record<string, string> = {
-  opportunity: "Возможность",
-  market: "Рынок",
-  doodad: "Траты",
-  paycheck: "Доход",
-  charity: "Благотворительность",
-  baby: "Ребёнок",
-  downsized: "Увольнение",
-  cashflow_day: "День денежного потока",
-  business: "Бизнес",
-  dream: "Мечта",
-  loss: "Потеря",
-};

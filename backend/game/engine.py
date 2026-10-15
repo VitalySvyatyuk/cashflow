@@ -271,7 +271,9 @@ _money = finance.rub
 
 
 def _cells(track):
-    return list(BoardCell.objects.filter(track=track).order_by("position"))
+    return list(
+        BoardCell.objects.filter(track=track).select_related("cell_type").order_by("position")
+    )
 
 
 def _set_phase(game, phase):
@@ -497,7 +499,9 @@ def _current_cell(ctx):
     player = ctx.player
     if player.id != ctx.game.current_player_id:
         player = ctx.game.players.get(id=ctx.game.current_player_id)
-    return BoardCell.objects.get(track=player.track, position=player.position)
+    return BoardCell.objects.select_related("cell_type").get(
+        track=player.track, position=player.position
+    )
 
 
 def pay(player, amount, reason):
