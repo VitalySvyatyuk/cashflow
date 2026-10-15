@@ -124,3 +124,18 @@ make test-frontend   # тесты фронтенда (Vitest, в контейн�
 ```
 
 и нажмите «Apply & restart».
+
+## Сервер
+
+Игра: https://emelyanova-play.online — Caddy (HTTPS, фронтенд) + Django/Daphne + Postgres + Redis
+в Docker на Ubuntu, код в `/opt/cashflow/app`, пароли в `/opt/cashflow/.env.prod` (только на сервере).
+Вход на сервер — только по SSH-ключу.
+
+```sh
+make deploy          # выложить последний коммит (git archive → сборка на сервере)
+make prod-superuser  # создать ведущего на сервере
+make prod-logs       # логи
+make prod-backup     # резервная копия сейчас (автоматически — каждый день в 04:15 UTC, хранятся 7 дней)
+```
+
+Копии лежат в `/opt/cashflow/backups/`: `db_*.sql.gz` (база) и `media_*.tar.gz` (картинки).

@@ -1,4 +1,4 @@
-.PHONY: env up down logs psql venv test test-all lint fmt typecheck test-frontend migrate makemigrations seed seed-reset superuser shell
+.PHONY: deploy prod-superuser prod-logs prod-backup prod-shell env up down logs psql venv test test-all lint fmt typecheck test-frontend migrate makemigrations seed seed-reset superuser shell
 
 VENV := .venv/bin
 MANAGE := docker compose exec backend python manage.py
@@ -61,3 +61,22 @@ superuser:
 
 shell:
 	$(MANAGE) shell
+
+# --- Сервер (emelyanova-play.online) ---
+SERVER := root@95.163.229.64
+PROD := cd /opt/cashflow/app && docker compose -p cashflow -f docker-compose.prod.yml --env-file ../.env.prod
+
+deploy:  ## выложить последний коммит
+	./deploy/deploy.sh $(SERVER)
+
+prod-superuser:  ## создать ведущего на сервере (пароль вводите сами)
+	ssh -t $(SERVER) '$(PROD) exec backend python manage.py createsuperuser'
+
+prod-logs:
+	ssh $(SERVER) '$(PROD) logs -f --tail 100'
+
+prod-backup:  ## резервная копия прямо сейчас
+	ssh $(SERVER) /usr/local/bin/cashflow-backup
+
+prod-shell:
+	ssh -t $(SERVER) '$(PROD) exec backend python manage.py shell'
