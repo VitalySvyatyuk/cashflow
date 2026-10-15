@@ -2,6 +2,8 @@ import { useState } from "react";
 
 import type { PlayerState } from "../../api/types";
 import { money } from "../../lib/format";
+import { useGame } from "../../store/game";
+import { LendForm } from "../Loans";
 import { Modal } from "../Modal";
 import { ProfessionIcon } from "../ProfessionIcon";
 import { FinanceSheet, assetLabel } from "./FinanceSheet";
@@ -9,6 +11,10 @@ import { FinanceSheet, assetLabel } from "./FinanceSheet";
 /** Левая панель игрока: главное о деньгах и путь к выходу в большой круг. */
 export function FinanceSummary({ player }: { player: PlayerState }) {
   const [open, setOpen] = useState(false);
+  const [lending, setLending] = useState(false);
+  const view = useGame((s) => s.view);
+  const others = view?.players.filter((p) => p.id !== player.id) ?? [];
+  const canLend = view?.status === "running" && others.length > 0;
   const s = player.statement;
   const progress = s.total_expenses ? Math.min(1, s.passive_income / s.total_expenses) : 0;
 
@@ -68,9 +74,20 @@ export function FinanceSummary({ player }: { player: PlayerState }) {
       <button className="secondary" onClick={() => setOpen(true)}>
         Финансовый отчёт и кредиты
       </button>
+      {canLend && (
+        <button className="secondary" onClick={() => setLending(true)}>
+          🤝 Дать в долг игроку
+        </button>
+      )}
       {open && (
         <Modal title={`${player.name} — ${player.profession?.name ?? ""}`} onClose={() => setOpen(false)}>
           <FinanceSheet player={player} readOnly={false} />
+          {canLend && <LendForm lender={player} borrowers={others} />}
+        </Modal>
+      )}
+      {lending && (
+        <Modal title="Заём другому игроку" onClose={() => setLending(false)}>
+          <LendForm lender={player} borrowers={others} />
         </Modal>
       )}
     </div>

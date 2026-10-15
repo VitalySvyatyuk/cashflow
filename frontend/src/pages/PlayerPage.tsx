@@ -140,7 +140,7 @@ export function PlayerPage() {
         >
           <FinanceSheet player={viewingPlayer} readOnly={viewingPlayer.id !== me.id} />
           {viewingPlayer.id !== me.id && view.status === "running" && (
-            <LendForm lender={me} borrower={viewingPlayer} />
+            <LendForm lender={me} borrowers={[viewingPlayer]} />
           )}
         </Modal>
       )}

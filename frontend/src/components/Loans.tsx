@@ -53,8 +53,19 @@ export function LoanRequest({
 }
 
 /** Предложения займов: входящие — принять или отказаться, свои — отозвать. */
-export function LoanOffers({ state, me }: { state: GameState; me: PlayerState }) {
-  const action = useGame((s) => s.action);
+export function LoanOffers({
+  state,
+  me,
+  asHost = false,
+}: {
+  state: GameState;
+  me: PlayerState;
+  /** Ведущий отвечает за игрока. */
+  asHost?: boolean;
+}) {
+  const send = useGame((s) => s.action);
+  const action = (kind: string, params: Record<string, unknown>) =>
+    send(kind, asHost ? { ...params, player_id: me.id } : params);
   const name = (id: number) => state.players.find((p) => p.id === id)?.name ?? "";
   const paused = state.status !== "running";
   return (
@@ -87,15 +98,50 @@ export function LoanOffers({ state, me }: { state: GameState; me: PlayerState })
 }
 
 /** Дать в долг другому игроку под выбранный процент (можно 0). */
-export function LendForm({ lender, borrower }: { lender: PlayerState; borrower: PlayerState }) {
-  const action = useGame((s) => s.action);
+export function LendForm({
+  lender,
+  borrowers,
+  asHost = false,
+}: {
+  lender: PlayerState;
+  /** Кому можно дать: один — без выбора. */
+  borrowers: PlayerState[];
+  /** Ведущий оформляет заём от имени игрока lender. */
+  asHost?: boolean;
+}) {
+  const send = useGame((s) => s.action);
+  const [borrowerId, setBorrowerId] = useState(borrowers[0]?.id);
   const [amount, setAmount] = useState(Math.min(LOAN_STEP, Math.max(lender.cash, 0)));
   const [rate, setRate] = useState(0);
+  const borrower = borrowers.find((p) => p.id === borrowerId) ?? borrowers[0];
+  if (!borrower) return null;
   const valid = amount > 0 && amount <= lender.cash && rate >= 0 && rate <= 100;
+  const offer = () =>
+    send("offer_loan", {
+      borrower_id: borrower.id,
+      amount,
+      rate,
+      ...(asHost ? { player_id: lender.id } : {}),
+    });
   return (
     <div className="lend">
-      <h3>Дать в долг игроку {borrower.name}</h3>
+      <h3>
+        {asHost ? `${lender.name} даёт в долг` : "Дать в долг"}
+        {borrowers.length === 1 && ` игроку ${borrower.name}`}
+      </h3>
       <div className="row">
+        {borrowers.length > 1 && (
+          <label className="row">
+            Кому
+            <select value={borrower.id} onChange={(e) => setBorrowerId(Number(e.target.value))}>
+              {borrowers.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <label className="row">
           Сумма
           <input
@@ -122,10 +168,11 @@ export function LendForm({ lender, borrower }: { lender: PlayerState; borrower: 
         </label>
       </div>
       <p className="muted small">
-        {borrower.name} будет платить вам {money(loanPayment(amount, rate))} в месяц — это ваш пассивный
-        доход. Деньги уйдут, когда {borrower.name} согласится. У вас {money(lender.cash)}.
+        {borrower.name} будет платить {asHost ? lender.name : "вам"} {money(loanPayment(amount, rate))} в
+        месяц — это пассивный доход заимодавца. Деньги уйдут, когда {borrower.name} нажмёт «Принять». У{" "}
+        {asHost ? lender.name : "вас"} {money(lender.cash)}.
       </p>
-      <button disabled={!valid} onClick={() => action("offer_loan", { borrower_id: borrower.id, amount, rate })}>
+      <button disabled={!valid} onClick={offer}>
         Предложить заём
       </button>
     </div>

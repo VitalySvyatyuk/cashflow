@@ -6,6 +6,7 @@ import type { GameState } from "../api/types";
 import { Board } from "../components/board/Board";
 import { GameCard } from "../components/card/GameCard";
 import { FinanceSheet } from "../components/finance/FinanceSheet";
+import { LendForm, LoanOffers } from "../components/Loans";
 import { Modal } from "../components/Modal";
 import { Dice } from "../components/dice/Dice";
 import { SoundToggle } from "../components/SoundToggle";
@@ -192,6 +193,19 @@ function HostGame({ state }: { state: GameState }) {
           onClose={() => setViewing(null)}
         >
           <FinanceSheet player={viewingPlayer} readOnly={false} asHost />
+          {state.status === "running" && (
+            <>
+              <div className="actions">
+                <LoanOffers state={view} me={viewingPlayer} asHost />
+              </div>
+              <LendForm
+                key={viewingPlayer.id}
+                lender={viewingPlayer}
+                borrowers={view.players.filter((p) => p.id !== viewingPlayer.id)}
+                asHost
+              />
+            </>
+          )}
         </Modal>
       )}
       <Toast />
