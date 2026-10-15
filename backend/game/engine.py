@@ -372,8 +372,8 @@ def _land(ctx, cell):
         case CellKind.OPPORTUNITY:
             _set_phase(game, Game.Phase.CHOOSE_DEAL)
         case CellKind.MARKET:
-            _draw(ctx, CardCategory.MARKET)
-            _set_phase(game, Game.Phase.CARD)
+            # Карточку открывает сам игрок — см. _run_draw_market.
+            _set_phase(game, Game.Phase.MARKET)
         case CellKind.DOODAD:
             # Игрок сам нажимает «Заплатить» — см. _run_pay_card.
             _draw(ctx, CardCategory.DOODAD)
@@ -660,6 +660,11 @@ def _run_sell(ctx):
     log_event(ctx.game, "sold", player=player, amount=net, text=text)
 
 
+def _run_draw_market(ctx):
+    _draw(ctx, CardCategory.MARKET)
+    _set_phase(ctx.game, Game.Phase.CARD)
+
+
 def _run_pay_card(ctx):
     """Оплата карточки трат. Не хватает наличных — автоматически берётся кредит."""
     game, player = ctx.game, ctx.player
@@ -938,6 +943,7 @@ ACTIONS = {
         current_only=False,
         phases=CARD_OPEN,
     ),
+    "draw_market": Action("Карточка рынка", AUTO, _run_draw_market, phases=(P.MARKET,)),
     "pay_card": Action("Оплата", AUTO, _run_pay_card, phases=(P.PAY,)),
     "pass": Action(
         "Отказ", AUTO, _run_pass, phases=(P.CHOOSE_DEAL, P.CARD, P.CHARITY, P.BUSINESS, P.DREAM)

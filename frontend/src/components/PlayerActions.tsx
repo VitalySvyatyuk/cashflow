@@ -95,6 +95,9 @@ export function PlayerActions({
         }
         buttons.push(button(card?.category === "market" ? "Закрыть карточку" : "Отказаться", "pass"));
         break;
+      case "market":
+        buttons.push(button("Открыть карточку рынка", "draw_market"));
+        break;
       case "pay": {
         const amount = (card?.effect as { amount?: number } | undefined)?.amount ?? 0;
         buttons.push(

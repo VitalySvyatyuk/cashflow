@@ -166,6 +166,25 @@ def test_doodad_waits_for_player_to_pay(started, masha):
     assert started.events.filter(kind="paid").exists()
 
 
+def test_market_card_waits_for_player(started, masha, petya):
+    place(masha, cell_position(CellKind.MARKET) - 1)
+    act(started, masha, "roll", rnd=Dice(1))
+    started.refresh_from_db()
+    assert started.phase == Game.Phase.MARKET
+    assert started.current_card is None
+    with pytest.raises(GameError, match="нельзя"):
+        act(started, masha, "end_turn")
+    with pytest.raises(GameError, match="не ваш ход"):
+        act(started, petya, "draw_market")
+
+    act(started, masha, "draw_market")
+    started.refresh_from_db()
+    assert started.phase == Game.Phase.CARD
+    assert started.current_card.category == CardCategory.MARKET
+    act(started, masha, "pass")  # «Закрыть карточку»
+    assert fresh(started).phase == Game.Phase.END_TURN
+
+
 def test_only_current_player_pays(started, masha, petya):
     place(masha, cell_position(CellKind.DOODAD) - 1)
     act(started, masha, "roll", rnd=Dice(1))
