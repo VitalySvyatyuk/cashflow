@@ -124,7 +124,7 @@ export function FastTrackButton({ state, player }: { state: GameState; player: P
   const action = useGame((s) => s.action);
   if (player.track !== "rat_race" || !player.statement.can_exit_rat_race) return null;
   const midTurn =
-    player.id === state.current_player_id && !["roll", "end_turn"].includes(state.phase);
+    player.id === state.current_player_id && !["roll", "end_turn", "skip"].includes(state.phase);
   return (
     <button
       className="ok small-button"

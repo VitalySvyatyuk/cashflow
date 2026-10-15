@@ -231,6 +231,13 @@ def test_baby(started, masha):
     assert fresh(masha).children == 1
 
 
+def petya_turn(game, petya):
+    game.refresh_from_db()
+    game.phase = Game.Phase.END_TURN
+    game.save()
+    act(game, petya, "end_turn")
+
+
 def test_downsized_pays_and_skips_turns(started, masha, petya):
     place(masha, cell_position(CellKind.DOWNSIZED) - 1)
     expenses = statement(masha).total_expenses
@@ -239,16 +246,31 @@ def test_downsized_pays_and_skips_turns(started, masha, petya):
     act(started, masha, "roll", rnd=Dice(1))
     assert fresh(masha).cash == 100
     assert masha.skip_turns == 2
+    assert "пропускает 2 следующих хода" in started.events.last().payload["text"]
 
     act(started, masha, "end_turn")
-    assert fresh(started).current_player == petya
-    place(petya, cell_position(CellKind.PAYCHECK) - 1)
-    act(started, petya, "roll", rnd=Dice(1))
-    act(started, petya, "collect_income")
-    act(started, petya, "end_turn")
-    # Маша пропускает — снова ход Пети
-    assert fresh(started).current_player == petya
+    petya_turn(started, petya)
+    # Ход Маши: кубик не бросает, но ход у неё — и кнопка «Завершить ход»
+    started.refresh_from_db()
+    assert (started.current_player, started.phase) == (masha, Game.Phase.SKIP)
+    assert (
+        "уволен(а), пропускает ход (после него — ещё 1)" in (started.events.last().payload["text"])
+    )
     assert fresh(masha).skip_turns == 1
+    with pytest.raises(GameError, match="нельзя"):
+        act(started, masha, "roll", rnd=Dice(1))
+    act(started, masha, "take_loan", amount=10_000)  # сделки можно
+    act(started, masha, "end_turn")
+
+    petya_turn(started, petya)
+    started.refresh_from_db()
+    assert started.phase == Game.Phase.SKIP
+    assert "со следующего хода снова бросает кубик" in started.events.last().payload["text"]
+    act(started, masha, "end_turn")
+    petya_turn(started, petya)
+    started.refresh_from_db()
+    assert (started.current_player, started.phase) == (masha, Game.Phase.ROLL)
+    assert fresh(masha).skip_turns == 0
 
 
 # --- Сделки и одобрение ----------------------------------------------------------------
@@ -285,20 +307,25 @@ def test_buy_property_without_approval(started, masha):
     assert masha.assets.get().kind == Asset.Kind.REAL_ESTATE
 
 
-def charity_phase(game, player):
-    player.cash = 1_000_000
+RICH = 100_000_000
+
+
+def dream_phase(game, player):
+    """Игрок стоит на мечте в большом круге — её покупка требует одобрения ведущего."""
+    place(player, cell_position(CellKind.DREAM, Track.FAST_TRACK), Track.FAST_TRACK)
+    player.cash = RICH
     player.save()
-    game.phase = Game.Phase.CHARITY
+    game.phase = Game.Phase.DREAM
     game.save()
 
 
-def test_charity_needs_host_approval(started, masha):
-    charity_phase(started, masha)
-    pending = act(started, masha, "charity")
+def test_dream_needs_host_approval(started, masha):
+    dream_phase(started, masha)
+    pending = act(started, masha, "buy_dream")
     assert pending.status == PendingAction.Status.PENDING
-    assert fresh(masha).cash == 1_000_000  # ничего не изменилось до решения
+    assert fresh(masha).cash == RICH  # ничего не изменилось до решения
     approve(started, pending)
-    assert fresh(masha).cash < 1_000_000
+    assert fresh(masha).cash < RICH
 
 
 def test_host_amends_request(started, masha):
@@ -308,12 +335,12 @@ def test_host_amends_request(started, masha):
 
 
 def test_rejected_request_changes_nothing(started, masha):
-    charity_phase(started, masha)
-    pending = act(started, masha, "charity")
+    dream_phase(started, masha)
+    pending = act(started, masha, "buy_dream")
     decide(started, pending.id, False, comment="подумай ещё")
     assert fresh(pending).status == PendingAction.Status.REJECTED
-    assert fresh(masha).cash == 1_000_000
-    assert fresh(started).phase == Game.Phase.CHARITY
+    assert fresh(masha).cash == RICH
+    assert fresh(started).phase == Game.Phase.DREAM
     assert "подумай ещё" in started.events.last().payload["text"]
 
 
@@ -350,8 +377,8 @@ def test_buy_real_estate_creates_mortgage(started, masha):
 
 
 def test_pass_cancels_pending_request(started, masha):
-    charity_phase(started, masha)
-    pending = act(started, masha, "charity")
+    dream_phase(started, masha)
+    pending = act(started, masha, "buy_dream")
     act(started, masha, "pass")
     assert fresh(pending).status == PendingAction.Status.CANCELLED
     assert fresh(started).phase == Game.Phase.END_TURN
@@ -468,10 +495,10 @@ def test_next_turn_drops_offer(started, masha, petya):
 
 def test_approval_fails_if_turn_moved_on(started, masha):
     pending = act(started, masha, "take_loan", amount=10_000)  # не привязана к фазе
-    charity_phase(started, masha)
-    charity = act(started, masha, "charity")
+    dream_phase(started, masha)
+    dream = act(started, masha, "buy_dream")
     host(started, "next_turn")
-    assert fresh(charity).status == PendingAction.Status.CANCELLED
+    assert fresh(dream).status == PendingAction.Status.CANCELLED
     approve(started, pending)  # кредит всё ещё можно одобрить
     assert masha.liabilities.filter(title=BANK_LOAN_TITLE).exists()
 
@@ -599,7 +626,7 @@ def test_charity(started, masha):
 
     amount = statement(masha).total_income // 10
     cash = fresh(masha).cash
-    approve(started, act(started, masha, "charity"))
+    act(started, masha, "charity")
     assert fresh(masha).cash == cash - amount
     assert fresh(started).phase == Game.Phase.END_TURN
 
@@ -626,7 +653,7 @@ def test_charity_on_rat_race_gives_one_or_two_dice_for_three_turns(started, mash
     masha.save()
     place(masha, cell_position(CellKind.CHARITY) - 1)
     act(started, masha, "roll", rnd=Dice(1))
-    approve(started, act(started, masha, "charity"))
+    act(started, masha, "charity")
     masha.refresh_from_db()
     assert masha.dice_options() == [1, 2]
     started.phase = Game.Phase.ROLL
@@ -661,7 +688,7 @@ def test_charity_on_fast_track_gives_dice_choice_for_rest_of_game(started, masha
     masha.save()
     started.phase = Game.Phase.CHARITY
     started.save()
-    approve(started, act(started, masha, "charity"))
+    act(started, masha, "charity")
     masha.refresh_from_db()
     assert masha.fast_track_charity
     assert masha.charity_turns == 0

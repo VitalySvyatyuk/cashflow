@@ -290,14 +290,7 @@ def _next_turn(game):
     _cancel_phase_bound(game)
     players = list(game.players.order_by("seat"))
     index = next(i for i, p in enumerate(players) if p.id == game.current_player_id)
-    while True:
-        index = (index + 1) % len(players)
-        player = players[index]
-        if player.skip_turns == 0:
-            break
-        player.skip_turns -= 1
-        player.save(update_fields=["skip_turns"])
-        log_event(game, "turn_skipped", player=player, text=f"{player.name} пропускает ход")
+    player = players[(index + 1) % len(players)]
 
     game.current_player = player
     game.turn_number += 1
@@ -307,14 +300,20 @@ def _next_turn(game):
     game.dice = []
     game.current_card = None
     game.phase = Game.Phase.ROLL
+    text = f"Ход {game.turn_number}: {player.name}"
+    if player.skip_turns:
+        # Уволен: кубик не бросает, но может продавать и брать/давать в долг.
+        player.skip_turns -= 1
+        player.save(update_fields=["skip_turns"])
+        game.phase = Game.Phase.SKIP
+        left = (
+            f"после него — ещё {player.skip_turns}"
+            if player.skip_turns
+            else "со следующего хода снова бросает кубик"
+        )
+        text += f" — уволен(а), пропускает ход ({left})"
     game.save()
-    log_event(
-        game,
-        "turn_started",
-        player=player,
-        turn=game.turn_number,
-        text=f"Ход {game.turn_number}: {player.name}",
-    )
+    log_event(game, "turn_started", player=player, turn=game.turn_number, text=text)
 
 
 def _default_dice(player):
@@ -433,7 +432,9 @@ def _land(ctx, cell, announce=True):
                 "downsized",
                 player=player,
                 amount=amount,
-                text=f"{player.name} уволен(а): платит {_money(amount)} и пропускает 2 хода",
+                text=f"{player.name} уволен(а)! Платит {_money(amount)} (все расходы за месяц) "
+                f"и пропускает {DOWNSIZED_SKIP_TURNS} следующих хода: кубик не бросает, "
+                "но может продавать, брать и давать в долг",
             )
             _set_phase(game, Game.Phase.END_TURN)
         case CellKind.BUSINESS:
@@ -1104,7 +1105,11 @@ def _check_fast_track(ctx):
         raise GameError(f"{player.name} уже в большом круге.")
     if not statement(player).can_exit_rat_race:
         raise GameError(f"{player.name}: пассивный доход ещё не превышает расходы.")
-    if player == game.current_player and game.phase not in (Game.Phase.ROLL, Game.Phase.END_TURN):
+    if player == game.current_player and game.phase not in (
+        Game.Phase.ROLL,
+        Game.Phase.END_TURN,
+        Game.Phase.SKIP,
+    ):
         raise GameError(f"Дождитесь, пока {player.name} закончит ход.")
 
 
@@ -1222,7 +1227,7 @@ ACTIONS = {
     ),
     "charity": Action(
         "Благотворительность",
-        APPROVE,
+        AUTO,
         _run_charity,
         _check_charity,
         describe=lambda ctx: f"пожертвовать {_money(_charity_amount(ctx))}",
@@ -1304,7 +1309,12 @@ ACTIONS = {
         phases=CARD_OPEN,
     ),
     "end_turn": Action(
-        "Конец хода", AUTO, _run_end_turn, _check_end_turn, phases=(P.END_TURN,), phase_bound=False
+        "Конец хода",
+        AUTO,
+        _run_end_turn,
+        _check_end_turn,
+        phases=(P.END_TURN, P.SKIP),
+        phase_bound=False,
     ),
     # Только ведущий
     "pause": Action("Пауза", HOST, _run_pause, undoable=False, phase_bound=False),

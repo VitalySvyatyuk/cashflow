@@ -154,6 +154,8 @@ class Game(models.Model):
         BUSINESS = "business", "Покупка бизнеса"
         DREAM = "dream", "Покупка мечты"
         END_TURN = "end_turn", "Завершение хода"
+        # Уволенный игрок не бросает кубик, но может продавать и брать/давать в долг.
+        SKIP = "skip", "Пропуск хода (увольнение)"
 
     # Уникален только среди незавершённых игр — кодов всего 10 000.
     code = models.CharField("код", max_length=GAME_CODE_LENGTH, db_index=True)

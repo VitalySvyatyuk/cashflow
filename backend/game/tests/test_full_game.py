@@ -67,6 +67,9 @@ class Bot:
     def play_turn(self):
         game = self.game
         player = game.current_player
+        if game.phase == Game.Phase.SKIP:  # уволен — кубик не бросает
+            self.finish_turn(player)
+            return
         self.act(player, "roll", dice=self.rnd.choice(player.dice_options()))
 
         for _ in range(20):  # фаза меняется после каждого решения

@@ -35,6 +35,11 @@ export function PlayerList({
           {state.status !== "lobby" && <span className="cash">{money(p.cash)}</span>}
           {p.id === state.current_player_id && <span className="turn">ход</span>}
           {p.id === state.offer_player_id && <span className="turn offer">решает</span>}
+          {(p.skip_turns > 0 || (p.id === state.current_player_id && state.phase === "skip")) && (
+            <span className="turn offer" title="Увольнение: пропускает ходы, кубик не бросает">
+              уволен(а)
+            </span>
+          )}
         </li>
       ))}
       {presence && meId != null && (

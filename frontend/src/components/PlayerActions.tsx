@@ -176,10 +176,32 @@ export function PlayerActions({
         );
         break;
       }
-      case "charity":
-        buttons.push(button("Пожертвовать", "charity"));
+      case "charity": {
+        // Малый круг — 10% общего дохода, большой — сумма с клетки (как на сервере).
+        const amount =
+          me.track === "rat_race" ? Math.floor(me.statement.total_income / 10) : currentCellCost;
+        buttons.push(
+          <span key="charity-note" className="muted small">
+            {me.track === "rat_race"
+              ? "10% дохода — и 3 следующих хода можно бросать 1 или 2 кубика"
+              : "до конца игры можно бросать 1, 2 или 3 кубика"}
+          </span>,
+        );
+        buttons.push(
+          <button
+            key="charity"
+            className="ok"
+            disabled={disabled || amount > me.cash}
+            title={amount > me.cash ? "Не хватает наличных — возьмите кредит" : undefined}
+            onClick={() => action("charity")}
+          >
+            Пожертвовать {money(amount)}
+          </button>,
+        );
+        if (amount > me.cash) buttons.push(loanButton(amount));
         buttons.push(button("Отказаться", "pass"));
         break;
+      }
       case "business":
         buttons.push(button("Купить бизнес", "buy_business"));
         buttons.push(loanButton(currentCellCost));
@@ -188,6 +210,16 @@ export function PlayerActions({
       case "dream":
         buttons.push(button("Купить мечту", "buy_dream"));
         buttons.push(button("Отказаться", "pass"));
+        break;
+      case "skip":
+        buttons.push(
+          <span key="skip" className="offer-note">
+            Увольнение: этот ход пропускаете — кубик не бросаете
+            {me.skip_turns > 0 ? ` (пропустите ещё ${me.skip_turns})` : ", со следующего хода снова играете"}.
+            Продавать, брать и давать в долг можно.
+          </span>,
+        );
+        buttons.push(button("Завершить ход", "end_turn"));
         break;
       case "end_turn":
         if (state.stock_waiting.length) {

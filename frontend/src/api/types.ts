@@ -10,7 +10,9 @@ export type Phase =
   | "charity"
   | "business"
   | "dream"
-  | "end_turn";
+  | "end_turn"
+  /** Уволен: кубик не бросает, может продавать и брать/давать в долг. */
+  | "skip";
 export type Track = "rat_race" | "fast_track";
 export type Role = "host" | "player";
 
