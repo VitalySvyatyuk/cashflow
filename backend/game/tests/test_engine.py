@@ -569,6 +569,14 @@ def test_drawer_sells_own_stock_from_card(started, masha, petya):
     assert not masha.assets.exists()
 
 
+def test_drawer_cannot_sell_after_buying(started, masha, petya):
+    stock = give_stock(masha, 4)
+    draw_stock(started, masha, price=30)
+    act(started, masha, "buy", quantity=2)
+    with pytest.raises(GameError, match="уже решили"):
+        act(started, masha, "sell", asset_id=stock.id, quantity=1)
+
+
 def test_next_turn_stops_waiting_for_stock(started, masha, petya):
     give_stock(petya)
     draw_stock(started, masha)

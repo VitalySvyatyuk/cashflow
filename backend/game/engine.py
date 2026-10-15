@@ -723,6 +723,12 @@ def _sell_offer(ctx):
             and ctx.player.id not in ctx.game.stock_waiting
         ):
             raise GameError("Продать акции можно, только пока от вас ждут решения.")
+        if (
+            effect["type"] == "stock"
+            and ctx.player.id == ctx.game.current_player_id
+            and ctx.game.phase != Game.Phase.CARD
+        ):
+            raise GameError("Вы уже решили по этой карточке.")
         if asset.kind != Asset.Kind.STOCK or asset.key != effect["symbol"]:
             raise GameError("Эта карточка не про эти акции.")
         if ctx.params["quantity"] > asset.quantity:

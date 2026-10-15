@@ -31,10 +31,11 @@ export function GameCard({ state, me }: { state: GameState; me: PlayerState | nu
   const drawer = state.players.find((p) => p.id === state.current_player_id);
   const offerTo = state.players.find((p) => p.id === state.offer_player_id);
   const waiting = state.players.filter((p) => state.stock_waiting.includes(p.id)).map((p) => p.name);
-  // Акции из сделки продают тот, кто вытянул, и те, от кого ждут решения.
+  // Акции из сделки продают тот, кто вытянул (пока не купил и не отказался),
+  // и те, от кого ждут решения.
   const canSell =
     card.effect.type !== "stock" ||
-    me?.id === state.current_player_id ||
+    (me?.id === state.current_player_id && state.phase === "card") ||
     (me != null && state.stock_waiting.includes(me.id));
 
   if (collapsed) {
