@@ -263,32 +263,42 @@ def test_choose_deal_draws_card(started, masha):
     assert started.current_card.category == CardCategory.BIG_DEAL
 
 
-def test_buy_needs_host_approval(started, masha):
+def test_buy_stock_without_approval(started, masha):
     open_card(started, stock_card(price=10))
     cash = masha.cash
-    pending = act(started, masha, "buy", quantity=20)
+    assert act(started, masha, "buy", quantity=20) is None
 
-    assert pending.status == PendingAction.Status.PENDING
-    assert pending.description == "купить 20 акц. ТСТ за 200\xa0₽"
-    assert fresh(masha).cash == cash  # ничего не изменилось до решения
-
-    approve(started, pending)
+    assert not started.pending_actions.exists()
     assert fresh(masha).cash == cash - 200
     stock = masha.assets.get()
     assert (stock.kind, stock.key, stock.quantity) == (Asset.Kind.STOCK, "ТСТ", 20)
     assert fresh(started).phase == Game.Phase.END_TURN
 
 
+def test_buy_property_needs_host_approval(started, masha):
+    masha.cash = 10_000
+    masha.save()
+    open_card(started, house_card(down=5000))
+    pending = act(started, masha, "buy")
+
+    assert pending.status == PendingAction.Status.PENDING
+    assert pending.description == "купить «Дом 3/2 за 50000», взнос 5\xa0000\xa0₽"
+    assert fresh(masha).cash == 10_000  # ничего не изменилось до решения
+
+    approve(started, pending)
+    assert fresh(masha).cash == 5000
+    assert masha.assets.get().kind == Asset.Kind.REAL_ESTATE
+
+
 def test_host_amends_request(started, masha):
-    open_card(started, stock_card(price=10))
-    pending = act(started, masha, "buy", quantity=20)
-    approve(started, pending, quantity=5)
-    assert masha.assets.get().quantity == 5
+    pending = act(started, masha, "take_loan", amount=50_000)
+    approve(started, pending, amount=20_000)
+    assert masha.liabilities.get(title=BANK_LOAN_TITLE).balance == 20_000
 
 
 def test_rejected_request_changes_nothing(started, masha):
-    open_card(started, stock_card())
-    pending = act(started, masha, "buy", quantity=1)
+    open_card(started, house_card())
+    pending = act(started, masha, "buy")
     decide(started, pending.id, False, comment="подумай ещё")
     assert fresh(pending).status == PendingAction.Status.REJECTED
     assert not masha.assets.exists()
@@ -297,10 +307,10 @@ def test_rejected_request_changes_nothing(started, masha):
 
 
 def test_duplicate_request_rejected(started, masha):
-    open_card(started, stock_card())
-    act(started, masha, "buy", quantity=1)
+    open_card(started, house_card())
+    act(started, masha, "buy")
     with pytest.raises(GameError, match="уже ждёт"):
-        act(started, masha, "buy", quantity=2)
+        act(started, masha, "buy")
 
 
 def test_cannot_request_without_money(started, masha):
@@ -329,12 +339,12 @@ def test_buy_real_estate_creates_mortgage(started, masha):
     assert statement(masha).passive_income == passive + 200
 
 
-def test_pass_cancels_pending_buy(started, masha):
-    open_card(started, stock_card())
-    pending = act(started, masha, "buy", quantity=1)
+def test_pass_cancels_pending_buy(started, masha, petya):
+    open_card(started, house_card())
+    pending = act(started, masha, "buy")
     act(started, masha, "pass")
     assert fresh(pending).status == PendingAction.Status.CANCELLED
-    assert fresh(started).phase == Game.Phase.END_TURN
+    assert fresh(started).offer_player == petya  # дом предлагают следующему
 
 
 @pytest.fixture
@@ -449,8 +459,8 @@ def test_next_turn_drops_offer(started, masha, petya):
 
 def test_approval_fails_if_turn_moved_on(started, masha):
     pending = act(started, masha, "take_loan", amount=10_000)  # не привязана к фазе
-    open_card(started, stock_card())
-    buy = act(started, masha, "buy", quantity=1)
+    open_card(started, house_card())
+    buy = act(started, masha, "buy")
     host(started, "next_turn")
     assert fresh(buy).status == PendingAction.Status.CANCELLED
     approve(started, pending)  # кредит всё ещё можно одобрить
@@ -464,8 +474,7 @@ def test_other_player_sells_stock_on_card(started, masha, petya):
     Asset.objects.create(player=petya, kind=Asset.Kind.STOCK, title="ТСТ", key="ТСТ", quantity=10)
     open_card(started, stock_card(price=30))
     cash = petya.cash
-    pending = act(started, petya, "sell", asset_id=petya.assets.get().id, quantity=4)
-    approve(started, pending)
+    assert act(started, petya, "sell", asset_id=petya.assets.get().id, quantity=4) is None
     assert fresh(petya).cash == cash + 120
     assert petya.assets.get().quantity == 6
 
@@ -659,7 +668,7 @@ def test_adjust_cash(started, petya):
 def test_undo_restores_previous_state(started, masha):
     open_card(started, stock_card(price=10))
     cash = masha.cash
-    approve(started, act(started, masha, "buy", quantity=10))
+    act(started, masha, "buy", quantity=10)
     assert masha.assets.exists()
 
     host(started, "undo")

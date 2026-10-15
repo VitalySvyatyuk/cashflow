@@ -77,6 +77,8 @@ class Action:
     check: Callable[[Ctx], None] = lambda ctx: None
     parse: Callable[[dict], dict] = lambda params: {}
     describe: Callable[[Ctx], str] = lambda ctx: ""
+    # Для APPROVE: нужна ли санкция ведущего именно здесь (акции — без неё).
+    needs_approval: Callable[[Ctx], bool] = lambda ctx: True
     current_only: bool = True  # только игрок, чей сейчас ход
     undoable: bool = True
     # Заявка теряет смысл, когда ход уходит дальше.
@@ -102,7 +104,7 @@ def submit_action(game, actor, kind, params=None, rnd=None):
         _check_phase(ctx, action)
         action.check(ctx)
 
-        if action.policy == APPROVE and not actor.is_host:
+        if action.policy == APPROVE and not actor.is_host and action.needs_approval(ctx):
             if game.pending_actions.filter(
                 player=player, kind=kind, status=PendingAction.Status.PENDING
             ).exists():
@@ -1022,7 +1024,14 @@ ACTIONS = {
         "Выбор сделки", AUTO, _run_choose_deal, parse=_parse_deal, phases=(P.CHOOSE_DEAL,)
     ),
     "buy": Action(
-        "Покупка", APPROVE, _run_buy, _check_buy, _parse_buy, _describe_buy, phases=(P.CARD,)
+        "Покупка",
+        APPROVE,
+        _run_buy,
+        _check_buy,
+        _parse_buy,
+        _describe_buy,
+        needs_approval=lambda ctx: _deal_card(ctx).effect.get("type") != "stock",
+        phases=(P.CARD,),
     ),
     "sell": Action(
         "Продажа",
@@ -1031,6 +1040,7 @@ ACTIONS = {
         lambda ctx: _sell_offer(ctx),
         _parse_sell,
         _describe_sell,
+        needs_approval=lambda ctx: _sell_offer(ctx)[0].kind != Asset.Kind.STOCK,
         current_only=False,
         phases=CARD_OPEN,
     ),
