@@ -1,5 +1,6 @@
 // Токен игрока хранится в браузере, чтобы после перезагрузки вернуться в игру.
-// localStorage может быть недоступен (приватный режим) — тогда просто не запоминаем.
+// Если localStorage недоступен (строгие настройки приватности, встроенные браузеры),
+// держим токен в памяти: войти и играть можно, только перезагрузка страницы его потеряет.
 
 interface SavedPlayer {
   token: string;
@@ -7,25 +8,29 @@ interface SavedPlayer {
 }
 
 const key = (code: string) => `cashflow.player.${code}`;
+const memory = new Map<string, SavedPlayer>();
 
 export function loadPlayer(code: string): SavedPlayer | null {
   try {
     const raw = localStorage.getItem(key(code));
-    return raw ? (JSON.parse(raw) as SavedPlayer) : null;
+    if (raw) return JSON.parse(raw) as SavedPlayer;
   } catch {
-    return null;
+    // недоступно — смотрим в памяти
   }
+  return memory.get(code) ?? null;
 }
 
 export function savePlayer(code: string, player: SavedPlayer) {
+  memory.set(code, player);
   try {
     localStorage.setItem(key(code), JSON.stringify(player));
   } catch {
-    // ничего страшного
+    // останется только в памяти
   }
 }
 
 export function forgetPlayer(code: string) {
+  memory.delete(code);
   try {
     localStorage.removeItem(key(code));
   } catch {

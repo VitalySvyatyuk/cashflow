@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Резервная копия базы и загруженных картинок; хранит последние 7 дней.
 set -euo pipefail
+umask 077  # в копиях — вся база игры
 DIR=/opt/cashflow/backups
-mkdir -p "$DIR"
+mkdir -p "$DIR" && chmod 700 "$DIR"
 STAMP=$(date +%Y-%m-%d_%H%M)
 cd /opt/cashflow/app
 docker compose -p cashflow -f docker-compose.prod.yml --env-file ../.env.prod exec -T postgres \
