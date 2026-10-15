@@ -29,6 +29,7 @@ export function GameCard({ state, me }: { state: GameState; me: PlayerState | nu
   const card = state.current_card!;
   const [collapsed, setCollapsed] = useState(false);
   const drawer = state.players.find((p) => p.id === state.current_player_id);
+  const offerTo = state.players.find((p) => p.id === state.offer_player_id);
 
   if (collapsed) {
     return (
@@ -58,6 +59,7 @@ export function GameCard({ state, me }: { state: GameState; me: PlayerState | nu
         {card.text && <p>{card.text}</p>}
         <CardNumbers effect={card.effect as Effect} />
         {drawer && <p className="muted small">Вытянул(а): {drawer.name}</p>}
+        {offerTo && <p className="offer-note small">Предложено: {offerTo.name}</p>}
         {me && state.status === "running" && <SellOptions card={card} me={me} />}
       </div>
     </motion.div>

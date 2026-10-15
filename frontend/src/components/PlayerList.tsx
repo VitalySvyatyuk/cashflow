@@ -34,6 +34,7 @@ export function PlayerList({
           </span>
           {state.status !== "lobby" && <span className="cash">{money(p.cash)}</span>}
           {p.id === state.current_player_id && <span className="turn">ход</span>}
+          {p.id === state.offer_player_id && <span className="turn offer">решает</span>}
         </li>
       ))}
       {presence && meId != null && (

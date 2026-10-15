@@ -886,3 +886,10 @@ ul.plain {
   text-align: center;
   font-size: 18px;
 }
+
+/* Сделку предложили по кругу */
+.players .turn.offer,
+.offer-note {
+  color: var(--warn);
+  font-weight: 600;
+}

@@ -25,7 +25,10 @@ export function PlayerActions({
   const [quantity, setQuantity] = useState(1);
   const [dice, setDice] = useState<number | null>(null);
 
-  const myTurn = state.current_player_id === me.id;
+  // От сделки отказались — решает тот, кому её предложили по кругу.
+  const myTurn = (state.offer_player_id ?? state.current_player_id) === me.id;
+  const offered = state.offer_player_id === me.id;
+  const offerTo = state.players.find((p) => p.id === state.offer_player_id);
   const disabled = state.status !== "running" || busy;
   const myRequests = state.pending_actions.filter((a) => a.player_id === me.id);
   const card = state.current_card;
@@ -40,6 +43,14 @@ export function PlayerActions({
   );
 
   const buttons = [];
+  if (offered) {
+    const owner = state.players.find((p) => p.id === state.current_player_id);
+    buttons.push(
+      <span key="offer" className="offer-note">
+        {owner?.name} отказался(ась){asHost ? ":" : " — предлагают вам:"}
+      </span>,
+    );
+  }
   if (myTurn) {
     switch (state.phase) {
       case "roll":
@@ -142,7 +153,13 @@ export function PlayerActions({
 
   return (
     <div className="actions">
-      {buttons.length ? buttons : <span className="muted">Ход другого игрока</span>}
+      {buttons.length ? (
+        buttons
+      ) : offerTo ? (
+        <span className="muted">Сделку решает {offerTo.name}</span>
+      ) : (
+        <span className="muted">Ход другого игрока</span>
+      )}
       {!asHost &&
         myRequests.map((r) => (
           <span key={r.id} className="request">

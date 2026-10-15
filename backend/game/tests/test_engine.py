@@ -335,6 +335,116 @@ def test_pass_cancels_pending_buy(started, masha):
     assert fresh(started).phase == Game.Phase.END_TURN
 
 
+@pytest.fixture
+def trio(game, seeded, rnd):
+    """Игра на троих: Маша, Петя, Вася — по порядку мест."""
+    for name in ("Маша", "Петя", "Вася"):
+        lobby.join_game(game, name)
+    lobby.start_game(game, rnd=rnd)
+    game.refresh_from_db()
+    return game, *(game.players.get(name=n) for n in ("Маша", "Петя", "Вася"))
+
+
+def test_declined_property_offered_around_the_table(trio):
+    started, masha, petya, vasya = trio
+    open_card(started, house_card())
+    act(started, masha, "pass")
+    started.refresh_from_db()
+    assert started.phase == Game.Phase.CARD
+    assert started.offer_player == petya
+    assert started.events.filter(kind="offered", player=petya).exists()
+
+    with pytest.raises(GameError, match="не ваш ход"):
+        act(started, masha, "buy")
+    with pytest.raises(GameError, match="не ваш ход"):
+        act(started, vasya, "pass")
+
+    act(started, petya, "pass")
+    assert fresh(started).offer_player == vasya
+    act(started, vasya, "pass")
+    started.refresh_from_db()
+    assert started.offer_player is None
+    assert started.phase == Game.Phase.END_TURN
+    assert started.current_player == masha
+    assert started.events.filter(kind="offer_declined").exists()
+
+
+def test_offered_player_buys_property(started, masha, petya):
+    petya.cash = 10_000
+    petya.save()
+    open_card(started, house_card(down=5000))
+    act(started, masha, "pass")
+    pending = act(started, petya, "buy")
+    approve(started, pending)
+
+    started.refresh_from_db()
+    assert started.offer_player is None
+    assert started.phase == Game.Phase.END_TURN
+    assert started.current_player == masha
+    assert fresh(petya).cash == 5000
+    assert petya.assets.get().liability.balance == 45000
+    assert not masha.assets.exists()
+    act(started, masha, "end_turn")
+    assert fresh(started).current_player == petya
+
+
+def test_host_acts_for_offered_player(started, masha, petya):
+    petya.cash = 10_000
+    petya.save()
+    open_card(started, house_card())
+    act(started, masha, "pass")
+    host(started, "buy")  # без player_id — за того, кому предложено
+    assert petya.assets.exists()
+
+
+def test_offer_reaches_seats_before_current(trio):
+    started, masha, petya, vasya = trio
+    act(started, masha, "roll", rnd=Dice(1))
+    started.refresh_from_db()
+    started.phase = Game.Phase.END_TURN
+    started.save()
+    act(started, masha, "end_turn")
+    open_card(fresh(started), house_card())
+    act(started, petya, "pass")
+    assert fresh(started).offer_player == vasya
+    act(started, vasya, "pass")
+    assert fresh(started).offer_player == masha
+
+
+def test_offer_skips_fast_track_players(trio):
+    started, masha, petya, vasya = trio
+    place(petya, 0, Track.FAST_TRACK)
+    open_card(started, house_card())
+    act(started, masha, "pass")
+    assert fresh(started).offer_player == vasya
+
+
+def test_stock_and_market_cards_not_offered(started, masha, petya):
+    open_card(started, stock_card())
+    act(started, masha, "pass")
+    started.refresh_from_db()
+    assert started.offer_player is None
+    assert started.phase == Game.Phase.END_TURN
+
+
+def test_undo_returns_offer_to_previous_player(started, masha, petya):
+    open_card(started, house_card())
+    act(started, masha, "pass")
+    host(started, "undo")
+    started.refresh_from_db()
+    assert started.offer_player is None
+    assert started.phase == Game.Phase.CARD
+
+
+def test_next_turn_drops_offer(started, masha, petya):
+    open_card(started, house_card())
+    act(started, masha, "pass")
+    host(started, "next_turn")
+    started.refresh_from_db()
+    assert started.offer_player is None
+    assert started.current_player == petya
+
+
 def test_approval_fails_if_turn_moved_on(started, masha):
     pending = act(started, masha, "take_loan", amount=10_000)  # не привязана к фазе
     open_card(started, stock_card())
@@ -599,6 +709,34 @@ def test_fast_track_business(started, masha):
     cell = BoardCell.objects.get(track=Track.FAST_TRACK, position=fresh(masha).position)
     approve(started, act(started, masha, "buy_business"))
     assert fresh(masha).fast_track_income == cell.effect["cashflow"]
+
+
+def test_declined_business_offered_to_fast_track_players(started, masha, petya):
+    position = cell_position(CellKind.BUSINESS, Track.FAST_TRACK)
+    place(masha, position, Track.FAST_TRACK)
+    place(petya, 0, Track.FAST_TRACK)
+    petya.cash = 10_000_000
+    petya.save()
+    started.phase = Game.Phase.BUSINESS
+    started.save()
+    cell = BoardCell.objects.get(track=Track.FAST_TRACK, position=position)
+
+    act(started, masha, "pass")
+    assert fresh(started).offer_player == petya
+    approve(started, act(started, petya, "buy_business"))
+    assert fresh(petya).fast_track_income == cell.effect["cashflow"]
+    assert petya.assets.get().title == cell.title
+    assert fresh(started).phase == Game.Phase.END_TURN
+
+
+def test_declined_business_not_offered_to_rat_race(started, masha, petya):
+    place(masha, cell_position(CellKind.BUSINESS, Track.FAST_TRACK), Track.FAST_TRACK)
+    started.phase = Game.Phase.BUSINESS
+    started.save()
+    act(started, masha, "pass")
+    started.refresh_from_db()
+    assert started.offer_player is None
+    assert started.phase == Game.Phase.END_TURN
 
 
 # --- Колоды ----------------------------------------------------------------------------

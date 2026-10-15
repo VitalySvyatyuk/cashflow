@@ -156,7 +156,7 @@ def decide(game, action_id, approve, params=None, comment="", rnd=None):
             return pending
 
         ctx = Ctx(game, pending.player, action.parse(pending.payload | (params or {})), rnd or rng)
-        if action.current_only and pending.player_id != game.current_player_id:
+        if action.current_only and pending.player_id != _deciding_player_id(game):
             raise GameError("Ход уже перешёл к другому игроку.")
         _check_phase(ctx, action)
         action.check(ctx)
@@ -221,11 +221,17 @@ def _resolve_player(game, actor, action, params):
         if player is None:
             raise GameError("Игрок не найден.")
     else:
-        # Ведущий действует за игрока, чей сейчас ход.
-        player = game.current_player
-    if action.current_only and action.policy != HOST and player != game.current_player:
+        # Ведущий действует за игрока, чей сейчас ход (или кому предложена сделка).
+        player = game.players.filter(id=_deciding_player_id(game)).first()
+    deciding = _deciding_player_id(game)
+    if action.current_only and action.policy != HOST and getattr(player, "id", None) != deciding:
         raise GameError("Сейчас не ваш ход.")
     return player
+
+
+def _deciding_player_id(game):
+    """Кто сейчас решает: игрок, чей ход, или тот, кому по кругу предложили сделку."""
+    return game.offer_player_id or game.current_player_id
 
 
 def _check_phase(ctx, action):
@@ -292,6 +298,7 @@ def _next_turn(game):
     game.current_player = player
     game.turn_number += 1
     game.paydays = 0  # ведущий мог передать ход, пока доход не получен
+    game.offer_player = None
     game.dice = []
     game.current_card = None
     game.phase = Game.Phase.ROLL
@@ -481,7 +488,11 @@ def _draw(ctx, category):
 
 
 def _current_cell(ctx):
-    return BoardCell.objects.get(track=ctx.player.track, position=ctx.player.position)
+    """Клетка, на которой стоит игрок, чей сейчас ход (сделку могли предложить другому)."""
+    player = ctx.player
+    if player.id != ctx.game.current_player_id:
+        player = ctx.game.players.get(id=ctx.game.current_player_id)
+    return BoardCell.objects.get(track=player.track, position=player.position)
 
 
 def pay(player, amount, reason):
@@ -621,6 +632,7 @@ def _run_buy(ctx):
         amount=price,
         text=f"{player.name}: {_describe_buy(ctx)}",
     )
+    _close_offer(game)
     _set_phase(game, Game.Phase.END_TURN)
 
 
@@ -699,9 +711,61 @@ def _run_pay_card(ctx):
 
 
 def _run_pass(ctx):
-    log_event(ctx.game, "passed", player=ctx.player, text=f"{ctx.player.name} отказывается")
-    _cancel_phase_bound(ctx.game)
-    _set_phase(ctx.game, Game.Phase.END_TURN)
+    game, player = ctx.game, ctx.player
+    log_event(game, "passed", player=player, text=f"{player.name} отказывается")
+    _cancel_phase_bound(game)
+    candidates = _offer_candidates(ctx)
+    if candidates:
+        # От недвижимости или бизнеса отказались — предлагаем следующему по кругу.
+        ids = [p.id for p in candidates]
+        following = candidates[ids.index(player.id) + 1 :] if player.id in ids else candidates
+        if following:
+            game.offer_player = following[0]
+            game.save(update_fields=["offer_player"])
+            log_event(
+                game,
+                "offered",
+                player=game.offer_player,
+                text=f"Предложение «{_offer_title(ctx)}» переходит к {game.offer_player.name}",
+            )
+            return
+        log_event(game, "offer_declined", text=f"Никто не купил «{_offer_title(ctx)}»")
+    _close_offer(game)
+    _set_phase(game, Game.Phase.END_TURN)
+
+
+def _offer_candidates(ctx):
+    """Кому по кругу предлагают сделку после отказа: остальные игроки того же круга,
+    по порядку мест начиная со следующего за тем, чей ход. Пусто — сделка не передаётся."""
+    game = ctx.game
+    card = game.current_card
+    if game.phase == Game.Phase.BUSINESS:
+        track = Track.FAST_TRACK
+    elif (
+        game.phase == Game.Phase.CARD
+        and card is not None
+        and card.category in (CardCategory.SMALL_DEAL, CardCategory.BIG_DEAL)
+        and card.effect.get("type") == "real_estate"
+    ):
+        track = Track.RAT_RACE
+    else:
+        return []
+    players = list(game.players.order_by("seat"))
+    index = next(i for i, p in enumerate(players) if p.id == game.current_player_id)
+    following = players[index + 1 :] + players[:index]
+    return [p for p in following if p.track == track]
+
+
+def _offer_title(ctx):
+    if ctx.game.phase == Game.Phase.BUSINESS:
+        return _current_cell(ctx).title
+    return ctx.game.current_card.title
+
+
+def _close_offer(game):
+    if game.offer_player_id:
+        game.offer_player = None
+        game.save(update_fields=["offer_player"])
 
 
 def _charity_amount(ctx):
@@ -756,6 +820,7 @@ def _run_buy_business(ctx):
         amount=cost,
         text=f"{player.name} покупает «{cell.title}» за {_money(cost)}: +{_money(flow)} в месяц",
     )
+    _close_offer(ctx.game)
     _set_phase(ctx.game, Game.Phase.END_TURN)
 
 

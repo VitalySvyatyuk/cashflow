@@ -103,7 +103,10 @@ function HostGame({ state }: { state: GameState }) {
   const [viewing, setViewing] = useState<number | null>(null);
   const viewingPlayer = view.players.find((p) => p.id === viewing);
   const presence = useGame((s) => s.presence);
-  const settledCurrent = view.players.find((p) => p.id === view.current_player_id);
+  // Действуем за того, кто сейчас решает: игрока, чей ход, или того, кому предложили сделку.
+  const settledCurrent = view.players.find(
+    (p) => p.id === (view.offer_player_id ?? view.current_player_id),
+  );
   useGameSounds("host", null);
 
   return (

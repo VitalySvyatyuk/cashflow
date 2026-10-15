@@ -119,6 +119,8 @@ export interface GameState {
   dice: number[];
   /** Сколько клеток «Доход» прошла фишка — получает кнопкой «Получить». */
   paydays: number;
+  /** Кто-то отказался от недвижимости или бизнеса — сделка предложена этому игроку. */
+  offer_player_id: number | null;
   current_card: Card | null;
   winner_id: number | null;
   players: PlayerState[];

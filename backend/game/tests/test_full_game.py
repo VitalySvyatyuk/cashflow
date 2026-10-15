@@ -69,17 +69,19 @@ class Bot:
         player = game.current_player
         self.act(player, "roll", dice=self.rnd.choice([1, 2, 3]))
 
-        for _ in range(10):  # фаза меняется после каждого решения
+        for _ in range(20):  # фаза меняется после каждого решения
             game.refresh_from_db()
             if game.status == Game.Status.FINISHED:
                 return
             player.refresh_from_db()
+            # От сделки отказались — решает тот, кому её предложили по кругу.
+            decider = game.offer_player or player
             phase = game.phase
             if phase == Game.Phase.CHOOSE_DEAL:
                 size = "big" if player.cash > 300_000 else "small"
                 self.act(player, "choose_deal", size=size)
             elif phase == Game.Phase.CARD:
-                self.handle_card(player)
+                self.handle_card(decider)
             elif phase == Game.Phase.INCOME:
                 self.act(player, "collect_income")
             elif phase == Game.Phase.PAY:
@@ -88,8 +90,8 @@ class Bot:
                 if not self.try_act(player, "charity"):
                     self.act(player, "pass")
             elif phase == Game.Phase.BUSINESS:
-                if not self.try_act(player, "buy_business"):
-                    self.act(player, "pass")
+                if not self.try_act(decider, "buy_business"):
+                    self.act(decider, "pass")
             elif phase == Game.Phase.DREAM:
                 if not self.try_act(player, "buy_dream"):
                     self.act(player, "pass")

@@ -182,6 +182,15 @@ class Game(models.Model):
     dice = models.JSONField("последний бросок", default=list, blank=True)
     # Сколько клеток «Доход» прошла фишка за ход — игрок получает их кнопкой «Получить».
     paydays = models.PositiveSmallIntegerField("доходов к получению", default=0)
+    # Игрок отказался от недвижимости или бизнеса — сделку по кругу предлагают остальным.
+    offer_player = models.ForeignKey(
+        "Player",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name="кому предложена сделка",
+    )
     current_card = models.ForeignKey(
         "Card",
         on_delete=models.SET_NULL,
