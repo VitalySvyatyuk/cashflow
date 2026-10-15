@@ -148,6 +148,7 @@ class Game(models.Model):
         ROLL = "roll", "Бросок кубиков"
         CHOOSE_DEAL = "choose_deal", "Выбор сделки"
         CARD = "card", "Открыта карточка"
+        PAY = "pay", "Оплата карточки"
         CHARITY = "charity", "Благотворительность"
         BUSINESS = "business", "Покупка бизнеса"
         DREAM = "dream", "Покупка мечты"

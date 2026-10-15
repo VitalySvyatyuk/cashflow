@@ -375,17 +375,9 @@ def _land(ctx, cell):
             _draw(ctx, CardCategory.MARKET)
             _set_phase(game, Game.Phase.CARD)
         case CellKind.DOODAD:
-            card = _draw(ctx, CardCategory.DOODAD)
-            amount = card.effect.get("amount", 0)
-            pay(player, amount, card.title)
-            log_event(
-                game,
-                "paid",
-                player=player,
-                amount=amount,
-                text=f"{player.name} платит {_money(amount)}: {card.title}",
-            )
-            _set_phase(game, Game.Phase.END_TURN)
+            # Игрок сам нажимает «Заплатить» — см. _run_pay_card.
+            _draw(ctx, CardCategory.DOODAD)
+            _set_phase(game, Game.Phase.PAY)
         case CellKind.CHARITY:
             _set_phase(game, Game.Phase.CHARITY)
         case CellKind.BABY:
@@ -668,6 +660,22 @@ def _run_sell(ctx):
     log_event(ctx.game, "sold", player=player, amount=net, text=text)
 
 
+def _run_pay_card(ctx):
+    """Оплата карточки трат. Не хватает наличных — автоматически берётся кредит."""
+    game, player = ctx.game, ctx.player
+    card = game.current_card
+    amount = card.effect.get("amount", 0)
+    pay(player, amount, card.title)
+    log_event(
+        game,
+        "paid",
+        player=player,
+        amount=amount,
+        text=f"{player.name} платит {_money(amount)}: {card.title}",
+    )
+    _set_phase(game, Game.Phase.END_TURN)
+
+
 def _run_pass(ctx):
     log_event(ctx.game, "passed", player=ctx.player, text=f"{ctx.player.name} отказывается")
     _cancel_phase_bound(ctx.game)
@@ -930,6 +938,7 @@ ACTIONS = {
         current_only=False,
         phases=CARD_OPEN,
     ),
+    "pay_card": Action("Оплата", AUTO, _run_pay_card, phases=(P.PAY,)),
     "pass": Action(
         "Отказ", AUTO, _run_pass, phases=(P.CHOOSE_DEAL, P.CARD, P.CHARITY, P.BUSINESS, P.DREAM)
     ),

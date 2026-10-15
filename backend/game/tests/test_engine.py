@@ -146,15 +146,33 @@ def test_passing_paycheck_pays_cashflow(started, masha):
     assert fresh(started).phase == Game.Phase.CHOOSE_DEAL
 
 
-def test_doodad_paid_automatically(started, masha):
+def test_doodad_waits_for_player_to_pay(started, masha):
     place(masha, cell_position(CellKind.DOODAD) - 1)
     masha.cash = 100000
     masha.save()
     act(started, masha, "roll", rnd=Dice(1))
     started.refresh_from_db()
-    assert started.phase == Game.Phase.END_TURN
+    assert started.phase == Game.Phase.PAY
     assert started.current_card.category == CardCategory.DOODAD
+    assert fresh(masha).cash == 100000  # пока не нажал «Заплатить»
+    for kind in ("pass", "end_turn"):
+        with pytest.raises(GameError, match="нельзя"):
+            act(started, masha, kind)
+
+    act(started, masha, "pay_card")
+    started.refresh_from_db()
+    assert started.phase == Game.Phase.END_TURN
     assert fresh(masha).cash == 100000 - started.current_card.effect["amount"]
+    assert started.events.filter(kind="paid").exists()
+
+
+def test_only_current_player_pays(started, masha, petya):
+    place(masha, cell_position(CellKind.DOODAD) - 1)
+    act(started, masha, "roll", rnd=Dice(1))
+    with pytest.raises(GameError, match="не ваш ход"):
+        act(started, petya, "pay_card")
+    host(started, "pay_card")  # ведущий может заплатить за игрока
+    assert fresh(started).phase == Game.Phase.END_TURN
 
 
 def test_doodad_takes_auto_loan_when_broke(started, masha):
@@ -162,6 +180,7 @@ def test_doodad_takes_auto_loan_when_broke(started, masha):
     masha.save()
     place(masha, cell_position(CellKind.DOODAD) - 1)
     act(started, masha, "roll", rnd=Dice(1))
+    act(started, masha, "pay_card")
     amount = fresh(started).current_card.effect["amount"]
     loan = masha.liabilities.get(title=BANK_LOAN_TITLE)
     assert loan.balance % BANK_LOAN_STEP == 0 and loan.balance >= amount

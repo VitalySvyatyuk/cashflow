@@ -95,6 +95,20 @@ export function PlayerActions({
         }
         buttons.push(button(card?.category === "market" ? "Закрыть карточку" : "Отказаться", "pass"));
         break;
+      case "pay": {
+        const amount = (card?.effect as { amount?: number } | undefined)?.amount ?? 0;
+        buttons.push(
+          <button
+            key="pay"
+            disabled={disabled}
+            title={amount > me.cash ? "Наличных не хватает — недостающее возьмётся в кредит" : undefined}
+            onClick={() => action("pay_card")}
+          >
+            Заплатить {money(amount)}
+          </button>,
+        );
+        break;
+      }
       case "charity":
         buttons.push(button("Пожертвовать", "charity"));
         buttons.push(button("Отказаться", "pass"));

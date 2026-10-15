@@ -5,6 +5,7 @@ export type Phase =
   | "roll"
   | "choose_deal"
   | "card"
+  | "pay"
   | "charity"
   | "business"
   | "dream"
