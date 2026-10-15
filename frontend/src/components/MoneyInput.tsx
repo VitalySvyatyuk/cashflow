@@ -7,14 +7,16 @@ export function MoneyInput({
   label,
   step = LOAN_STEP,
   max,
+  initial,
   onSubmit,
 }: {
   label: string;
   step?: number;
   max?: number;
+  initial?: number;
   onSubmit: (amount: number) => void;
 }) {
-  const [amount, setAmount] = useState(step);
+  const [amount, setAmount] = useState(initial ?? step);
   const valid = amount > 0 && amount % step === 0 && (max === undefined || amount <= max);
   return (
     <span className="money-input">

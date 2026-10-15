@@ -22,6 +22,8 @@ export function FinanceSheet({
   const s = player.statement;
   const prof = player.profession;
   const incomeAssets = player.assets.filter((a) => a.cashflow !== 0);
+  const players = useGame((st) => st.view?.players ?? []);
+  const name = (id: number | null) => players.find((p) => p.id === id)?.name ?? "игрок";
 
   return (
     <div className="sheet">
@@ -32,6 +34,11 @@ export function FinanceSheet({
           {incomeAssets.map((a) => (
             <Row key={a.id} label={assetLabel(a)} value={a.cashflow} muted />
           ))}
+          {player.loans_given
+            .filter((l) => l.payment > 0)
+            .map((l) => (
+              <Row key={`loan-${l.id}`} label={`Проценты: долг ${name(l.player_id)}`} value={l.payment} muted />
+            ))}
           <Row label="Пассивный доход" value={s.passive_income} strong />
           <Row label="Общий доход" value={s.total_income} strong />
         </section>
@@ -76,18 +83,31 @@ export function FinanceSheet({
               </span>
             </div>
           ))}
+          {player.loans_given.map((l) => (
+            <div key={`loan-${l.id}`} className="sheet-row">
+              <span>
+                Заём игроку {name(l.player_id)}
+                <span className="muted"> · {l.rate}% в месяц</span>
+              </span>
+              <span className="muted">{money(l.balance)}</span>
+            </div>
+          ))}
         </section>
 
         <section>
           <h3>Пассивы</h3>
           {player.liabilities.map((l) => (
             <div key={l.id} className="sheet-row">
-              <span>{l.title}</span>
+              <span>
+                {l.title}
+                {l.lender_id && <span className="muted"> · {l.rate}% в месяц</span>}
+              </span>
               <span className="row">
                 {money(l.balance)}
                 {!readOnly && !l.asset_id && (
                   <RepayControl
                     title={l.title}
+                    toPlayer={l.lender_id !== null}
                     balance={l.balance}
                     cash={player.cash}
                     onRepay={(amount) => action("repay_loan", { liability_id: l.id, amount })}
@@ -110,10 +130,16 @@ export function FinanceSheet({
 
 function RepayControl(props: {
   title: string;
+  /** Долг игроку: любой суммой, сразу ему (без ведущего). */
+  toPlayer: boolean;
   balance: number;
   cash: number;
   onRepay: (amount: number) => void;
 }) {
+  if (props.toPlayer) {
+    const max = Math.min(props.balance, props.cash);
+    return <MoneyInput key={max} label="Вернуть" step={1} initial={max} max={max} onSubmit={props.onRepay} />;
+  }
   if (props.title === BANK_LOAN) {
     return <MoneyInput label="Погасить" max={Math.min(props.balance, props.cash)} onSubmit={props.onRepay} />;
   }

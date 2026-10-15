@@ -51,6 +51,26 @@ export interface Liability {
   balance: number;
   payment: number;
   asset_id: number | null;
+  /** Долг другому игроку: кому и под сколько процентов в месяц. */
+  lender_id: number | null;
+  rate: number;
+}
+
+/** Заём, выданный другому игроку (player_id — заёмщик). */
+export interface LoanGiven {
+  id: number;
+  player_id: number;
+  balance: number;
+  payment: number;
+  rate: number;
+}
+
+export interface LoanOffer {
+  id: number;
+  lender_id: number;
+  borrower_id: number;
+  amount: number;
+  rate: number;
 }
 
 export interface PlayerState {
@@ -73,6 +93,7 @@ export interface PlayerState {
   statement: Statement;
   assets: Asset[];
   liabilities: Liability[];
+  loans_given: LoanGiven[];
 }
 
 export interface PendingAction {
@@ -127,6 +148,8 @@ export interface GameState {
   offer_player_id: number | null;
   /** Открыты акции: у этих игроков они есть — ждём, продадут или откажутся. */
   stock_waiting: number[];
+  /** Предложения займов между игроками, ждущие ответа заёмщика. */
+  loan_offers: LoanOffer[];
   current_card: Card | null;
   winner_id: number | null;
   players: PlayerState[];

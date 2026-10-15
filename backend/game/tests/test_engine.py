@@ -275,19 +275,30 @@ def test_buy_stock_without_approval(started, masha):
     assert fresh(started).phase == Game.Phase.END_TURN
 
 
-def test_buy_property_needs_host_approval(started, masha):
+def test_buy_property_without_approval(started, masha):
     masha.cash = 10_000
     masha.save()
     open_card(started, house_card(down=5000))
-    pending = act(started, masha, "buy")
-
-    assert pending.status == PendingAction.Status.PENDING
-    assert pending.description == "купить «Дом 3/2 за 50000», взнос 5\xa0000\xa0₽"
-    assert fresh(masha).cash == 10_000  # ничего не изменилось до решения
-
-    approve(started, pending)
+    assert act(started, masha, "buy") is None
+    assert not started.pending_actions.exists()
     assert fresh(masha).cash == 5000
     assert masha.assets.get().kind == Asset.Kind.REAL_ESTATE
+
+
+def charity_phase(game, player):
+    player.cash = 1_000_000
+    player.save()
+    game.phase = Game.Phase.CHARITY
+    game.save()
+
+
+def test_charity_needs_host_approval(started, masha):
+    charity_phase(started, masha)
+    pending = act(started, masha, "charity")
+    assert pending.status == PendingAction.Status.PENDING
+    assert fresh(masha).cash == 1_000_000  # ничего не изменилось до решения
+    approve(started, pending)
+    assert fresh(masha).cash < 1_000_000
 
 
 def test_host_amends_request(started, masha):
@@ -297,20 +308,19 @@ def test_host_amends_request(started, masha):
 
 
 def test_rejected_request_changes_nothing(started, masha):
-    open_card(started, house_card())
-    pending = act(started, masha, "buy")
+    charity_phase(started, masha)
+    pending = act(started, masha, "charity")
     decide(started, pending.id, False, comment="подумай ещё")
     assert fresh(pending).status == PendingAction.Status.REJECTED
-    assert not masha.assets.exists()
-    assert fresh(started).phase == Game.Phase.CARD
+    assert fresh(masha).cash == 1_000_000
+    assert fresh(started).phase == Game.Phase.CHARITY
     assert "подумай ещё" in started.events.last().payload["text"]
 
 
 def test_duplicate_request_rejected(started, masha):
-    open_card(started, house_card())
-    act(started, masha, "buy")
+    act(started, masha, "take_loan", amount=10_000)
     with pytest.raises(GameError, match="уже ждёт"):
-        act(started, masha, "buy")
+        act(started, masha, "take_loan", amount=20_000)
 
 
 def test_cannot_request_without_money(started, masha):
@@ -330,7 +340,7 @@ def test_buy_real_estate_creates_mortgage(started, masha):
     masha.save()
     passive = statement(masha).passive_income
     open_card(started, house_card(cost=50000, down=5000, flow=200))
-    approve(started, act(started, masha, "buy"))
+    act(started, masha, "buy")
 
     house = masha.assets.get()
     assert house.key == "Дом 3/2"
@@ -339,12 +349,12 @@ def test_buy_real_estate_creates_mortgage(started, masha):
     assert statement(masha).passive_income == passive + 200
 
 
-def test_pass_cancels_pending_buy(started, masha, petya):
-    open_card(started, house_card())
-    pending = act(started, masha, "buy")
+def test_pass_cancels_pending_request(started, masha):
+    charity_phase(started, masha)
+    pending = act(started, masha, "charity")
     act(started, masha, "pass")
     assert fresh(pending).status == PendingAction.Status.CANCELLED
-    assert fresh(started).offer_player == petya  # дом предлагают следующему
+    assert fresh(started).phase == Game.Phase.END_TURN
 
 
 @pytest.fixture
@@ -386,8 +396,7 @@ def test_offered_player_buys_property(started, masha, petya):
     petya.save()
     open_card(started, house_card(down=5000))
     act(started, masha, "pass")
-    pending = act(started, petya, "buy")
-    approve(started, pending)
+    act(started, petya, "buy")
 
     started.refresh_from_db()
     assert started.offer_player is None
@@ -459,10 +468,10 @@ def test_next_turn_drops_offer(started, masha, petya):
 
 def test_approval_fails_if_turn_moved_on(started, masha):
     pending = act(started, masha, "take_loan", amount=10_000)  # не привязана к фазе
-    open_card(started, house_card())
-    buy = act(started, masha, "buy")
+    charity_phase(started, masha)
+    charity = act(started, masha, "charity")
     host(started, "next_turn")
-    assert fresh(buy).status == PendingAction.Status.CANCELLED
+    assert fresh(charity).status == PendingAction.Status.CANCELLED
     approve(started, pending)  # кредит всё ещё можно одобрить
     assert masha.liabilities.filter(title=BANK_LOAN_TITLE).exists()
 
@@ -710,6 +719,99 @@ def test_other_player_can_take_loan_any_time(started, petya):
 # --- Ведущий ---------------------------------------------------------------------------
 
 
+# --- Займы между игроками --------------------------------------------------------------
+
+
+def test_player_lends_with_interest(started, masha, petya):
+    masha.cash, petya.cash = 100_000, 0
+    masha.save()
+    petya.save()
+    passive = statement(masha).passive_income
+    expenses = statement(petya).total_expenses
+
+    act(started, masha, "offer_loan", borrower_id=petya.id, amount=50_000, rate=5)
+    offer = started.loan_offers.get()
+    assert fresh(masha).cash == 100_000  # деньги уходят, только когда заёмщик согласится
+    with pytest.raises(GameError, match="только тот"):
+        act(started, masha, "accept_loan", offer_id=offer.id)
+
+    act(started, petya, "accept_loan", offer_id=offer.id)
+    assert not started.loan_offers.exists()
+    assert fresh(masha).cash == 50_000
+    assert fresh(petya).cash == 50_000
+    debt = petya.liabilities.get(lender=masha)
+    assert (debt.lender, debt.balance, debt.payment, debt.rate) == (masha, 50_000, 2500, 5)
+    assert debt.title == "Долг игроку Маша"
+    assert statement(petya).total_expenses == expenses + 2500
+    assert statement(masha).passive_income == passive + 2500
+
+
+def test_interest_free_loan(started, masha, petya):
+    act(started, petya, "offer_loan", borrower_id=masha.id, amount=10_000, rate=0)
+    act(started, masha, "accept_loan", offer_id=started.loan_offers.get().id)
+    assert masha.liabilities.get(lender=petya).payment == 0
+
+
+def test_repay_player_loan_goes_to_lender_without_host(started, masha, petya):
+    masha.cash, petya.cash = 100_000, 0
+    masha.save()
+    petya.save()
+    act(started, masha, "offer_loan", borrower_id=petya.id, amount=50_000, rate=10)
+    act(started, petya, "accept_loan", offer_id=started.loan_offers.get().id)
+    debt = petya.liabilities.get(lender=masha)
+
+    assert act(started, petya, "repay_loan", liability_id=debt.id, amount=12_345) is None
+    debt.refresh_from_db()
+    assert (debt.balance, debt.payment) == (37_655, 3765)
+    assert fresh(masha).cash == 50_000 + 12_345
+    act(started, petya, "repay_loan", liability_id=debt.id, amount=37_655)
+    assert not petya.liabilities.filter(lender=masha).exists()
+    assert fresh(masha).cash == 100_000
+
+
+def test_loan_offer_checks(started, masha, petya):
+    masha.cash = 1000
+    masha.save()
+    with pytest.raises(GameError, match="Не хватает"):
+        act(started, masha, "offer_loan", borrower_id=petya.id, amount=5000, rate=0)
+    with pytest.raises(GameError, match="самому себе"):
+        act(started, masha, "offer_loan", borrower_id=masha.id, amount=500, rate=0)
+    with pytest.raises(GameError, match="от 0 до 100"):
+        act(started, masha, "offer_loan", borrower_id=petya.id, amount=500, rate=101)
+    with pytest.raises(GameError, match="маленькое"):
+        act(started, masha, "offer_loan", borrower_id=petya.id, amount=500, rate=-1)
+
+
+def test_lender_spent_money_before_acceptance(started, masha, petya):
+    act(started, masha, "offer_loan", borrower_id=petya.id, amount=masha.cash, rate=1)
+    masha.cash = 0
+    masha.save()
+    with pytest.raises(GameError, match="уже нет"):
+        act(started, petya, "accept_loan", offer_id=started.loan_offers.get().id)
+
+
+def test_decline_and_withdraw_loan_offer(started, masha, petya):
+    act(started, masha, "offer_loan", borrower_id=petya.id, amount=1000, rate=0)
+    act(started, petya, "decline_loan", offer_id=started.loan_offers.get().id)
+    assert not started.loan_offers.exists()
+
+    act(started, masha, "offer_loan", borrower_id=petya.id, amount=1000, rate=0)
+    act(started, masha, "offer_loan", borrower_id=petya.id, amount=2000, rate=3)  # заменяет
+    offer = started.loan_offers.get()
+    assert (offer.amount, offer.rate) == (2000, 3)
+    act(started, masha, "decline_loan", offer_id=offer.id)
+    assert not started.loan_offers.exists()
+
+
+def test_undo_player_loan(started, masha, petya):
+    cash = masha.cash
+    act(started, masha, "offer_loan", borrower_id=petya.id, amount=1000, rate=2)
+    act(started, petya, "accept_loan", offer_id=started.loan_offers.get().id)
+    host(started, "undo")
+    assert fresh(masha).cash == cash
+    assert not petya.liabilities.filter(lender=masha).exists()
+
+
 def test_pause_blocks_players(started, masha):
     host(started, "pause")
     assert fresh(started).status == Game.Status.PAUSED
@@ -848,7 +950,7 @@ def test_fast_track_business(started, masha):
     masha.save()
     act(started, masha, "roll", rnd=Dice(1, 0))
     cell = BoardCell.objects.get(track=Track.FAST_TRACK, position=fresh(masha).position)
-    approve(started, act(started, masha, "buy_business"))
+    act(started, masha, "buy_business")
     assert fresh(masha).fast_track_income == cell.effect["cashflow"]
 
 
@@ -864,7 +966,7 @@ def test_declined_business_offered_to_fast_track_players(started, masha, petya):
 
     act(started, masha, "pass")
     assert fresh(started).offer_player == petya
-    approve(started, act(started, petya, "buy_business"))
+    act(started, petya, "buy_business")
     assert fresh(petya).fast_track_income == cell.effect["cashflow"]
     assert petya.assets.get().title == cell.title
     assert fresh(started).phase == Game.Phase.END_TURN

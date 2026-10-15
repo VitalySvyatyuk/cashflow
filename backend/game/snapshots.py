@@ -79,7 +79,7 @@ def restore_latest(game):
         Asset(**_fk_ids(row, "player", "source_card")) for row in data["assets"]
     )
     Liability.objects.bulk_create(
-        Liability(**_fk_ids(row, "player", "asset")) for row in data["liabilities"]
+        Liability(**_fk_ids(row, "player", "asset", "lender")) for row in data["liabilities"]
     )
     for row in data["decks"]:
         DeckState.objects.filter(id=row["id"], game=game).update(

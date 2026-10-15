@@ -1,8 +1,10 @@
 import { useState } from "react";
 
+import { useBoard } from "../api/board";
 import type { GameState, PlayerState } from "../api/types";
 import { money } from "../lib/format";
 import { useGame } from "../store/game";
+import { LoanOffers, LoanRequest } from "./Loans";
 
 /** Кнопки по фазе хода. Подробная работа с карточками — на шаге 10. */
 export function PlayerActions({
@@ -24,6 +26,11 @@ export function PlayerActions({
   const cancel = useGame((s) => s.cancel);
   const [quantity, setQuantity] = useState(1);
   const [dice, setDice] = useState<number | null>(null);
+  const board = useBoard();
+  // Клетка бизнеса — там, где стоит игрок, чей ход (бизнес могли предложить другому).
+  const turnPlayer = state.players.find((p) => p.id === state.current_player_id);
+  const turnCell = turnPlayer && board?.[turnPlayer.track].find((c) => c.position === turnPlayer.position);
+  const currentCellCost = (turnCell?.effect as { cost?: number } | undefined)?.cost ?? 0;
 
   // От сделки отказались — решает тот, кому её предложили по кругу.
   const myTurn = (state.offer_player_id ?? state.current_player_id) === me.id;
@@ -36,6 +43,17 @@ export function PlayerActions({
   // По правилам: 1 кубик на малом круге, 2 на большом. Выбор — только после благотворительности.
   const defaultDice = me.track === "rat_race" ? 1 : 2;
   const diceCount = dice !== null && me.dice_options.includes(dice) ? dice : defaultDice;
+
+  // Кредит банка в момент сделки: заявка ведущему (ведущий за игрока — сразу).
+  const loanButton = (price: number) => (
+    <LoanRequest
+      key="loan"
+      need={price - me.cash}
+      disabled={disabled}
+      asHost={asHost}
+      onRequest={(amount) => action("take_loan", { amount })}
+    />
+  );
 
   const button = (label: string, kind: string, params?: Record<string, unknown>) => (
     <button key={label} disabled={disabled} onClick={() => action(kind, params)}>
@@ -121,12 +139,13 @@ export function PlayerActions({
             <button
               key="buy"
               disabled={disabled || price > me.cash}
-              title={price > me.cash ? "Не хватает наличных — можно взять кредит в финансовом отчёте" : undefined}
+              title={price > me.cash ? "Не хватает наличных — возьмите кредит" : undefined}
               onClick={() => action("buy", isStock ? { quantity } : {})}
             >
               Купить за {money(price)}
             </button>,
           );
+          buttons.push(loanButton(price));
         }
         buttons.push(button(card?.category === "market" ? "Закрыть карточку" : "Отказаться", "pass"));
         break;
@@ -163,6 +182,7 @@ export function PlayerActions({
         break;
       case "business":
         buttons.push(button("Купить бизнес", "buy_business"));
+        buttons.push(loanButton(currentCellCost));
         buttons.push(button("Отказаться", "pass"));
         break;
       case "dream":
@@ -199,6 +219,7 @@ export function PlayerActions({
       ) : (
         <span className="muted">Ход другого игрока</span>
       )}
+      {!asHost && <LoanOffers state={state} me={me} />}
       {!asHost &&
         myRequests.map((r) => (
           <span key={r.id} className="request">

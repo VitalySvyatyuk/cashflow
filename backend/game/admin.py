@@ -89,6 +89,7 @@ class AssetInline(admin.TabularInline):
 
 class LiabilityInline(admin.TabularInline):
     model = Liability
+    fk_name = "player"
     extra = 0
 
 

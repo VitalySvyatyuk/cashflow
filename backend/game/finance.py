@@ -34,7 +34,8 @@ class Statement:
 
 def statement(player):
     profession = player.profession
-    passive = sum(a.cashflow for a in player.assets.all())
+    # Проценты по займам другим игрокам — тоже пассивный доход.
+    passive = sum(a.cashflow for a in player.assets.all()) + loan_interest(player)
     salary = profession.salary if profession else 0
     expenses = sum(li.payment for li in player.liabilities.all())
     if profession:
@@ -51,6 +52,14 @@ def statement(player):
         total_expenses=expenses,
         cashflow=total_income - expenses,
     )
+
+
+def loan_interest(player):
+    return sum(li.payment for li in player.loans_given.all())
+
+
+def loan_payment(balance, rate):
+    return balance * rate // 100
 
 
 def round_up_loan(amount):

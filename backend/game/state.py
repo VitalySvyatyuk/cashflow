@@ -3,7 +3,17 @@
 from rest_framework import serializers
 
 from game.finance import statement
-from game.models import Asset, BoardCell, Card, Game, GameEvent, Liability, PendingAction, Player
+from game.models import (
+    Asset,
+    BoardCell,
+    Card,
+    Game,
+    GameEvent,
+    Liability,
+    LoanOffer,
+    PendingAction,
+    Player,
+)
 
 RECENT_EVENTS = 50
 
@@ -17,7 +27,19 @@ class AssetSerializer(serializers.ModelSerializer):
 class LiabilitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Liability
-        fields = ["id", "title", "balance", "payment", "asset_id"]
+        fields = ["id", "title", "balance", "payment", "asset_id", "lender_id", "rate"]
+
+
+class LoanGivenSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Liability
+        fields = ["id", "player_id", "balance", "payment", "rate"]
+
+
+class LoanOfferSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LoanOffer
+        fields = ["id", "lender_id", "borrower_id", "amount", "rate"]
 
 
 class PlayerStateSerializer(serializers.ModelSerializer):
@@ -26,6 +48,7 @@ class PlayerStateSerializer(serializers.ModelSerializer):
     dice_options = serializers.SerializerMethodField()
     assets = AssetSerializer(many=True, read_only=True)
     liabilities = LiabilitySerializer(many=True, read_only=True)
+    loans_given = LoanGivenSerializer(many=True, read_only=True)
 
     class Meta:
         model = Player
@@ -47,6 +70,7 @@ class PlayerStateSerializer(serializers.ModelSerializer):
             "statement",
             "assets",
             "liabilities",
+            "loans_given",
         ]
 
     def get_dice_options(self, player):
@@ -96,7 +120,9 @@ class EventSerializer(serializers.ModelSerializer):
 
 def build_state(game_id):
     game = Game.objects.select_related("current_card").get(pk=game_id)
-    players = game.players.select_related("profession").prefetch_related("assets", "liabilities")
+    players = game.players.select_related("profession").prefetch_related(
+        "assets", "liabilities", "loans_given"
+    )
     pending = game.pending_actions.filter(status=PendingAction.Status.PENDING)
     events = reversed(game.events.order_by("-seq")[:RECENT_EVENTS])
     return {
@@ -110,6 +136,7 @@ def build_state(game_id):
         "paydays": game.paydays,
         "offer_player_id": game.offer_player_id,
         "stock_waiting": game.stock_waiting,
+        "loan_offers": LoanOfferSerializer(game.loan_offers.all(), many=True).data,
         "current_card": CardSerializer(game.current_card).data if game.current_card else None,
         "winner_id": game.winner_id,
         "players": PlayerStateSerializer(players, many=True).data,

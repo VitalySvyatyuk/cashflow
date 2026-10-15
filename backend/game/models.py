@@ -344,6 +344,16 @@ class Liability(models.Model):
         related_name="liability",
         verbose_name="актив",
     )
+    # Долг другому игроку: платёж (rate % от остатка в месяц) — пассивный доход заимодавца.
+    lender = models.ForeignKey(
+        Player,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="loans_given",
+        verbose_name="заимодавец",
+    )
+    rate = models.PositiveSmallIntegerField("процент в месяц", default=0)
 
     class Meta:
         verbose_name = "пассив"
@@ -352,6 +362,31 @@ class Liability(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class LoanOffer(models.Model):
+    """Игрок предлагает другому деньги в долг; долг появляется, когда тот согласится."""
+
+    game = models.ForeignKey(
+        Game, on_delete=models.CASCADE, related_name="loan_offers", verbose_name="игра"
+    )
+    lender = models.ForeignKey(
+        Player, on_delete=models.CASCADE, related_name="+", verbose_name="заимодавец"
+    )
+    borrower = models.ForeignKey(
+        Player, on_delete=models.CASCADE, related_name="+", verbose_name="заёмщик"
+    )
+    amount = models.PositiveIntegerField("сумма")
+    rate = models.PositiveSmallIntegerField("процент в месяц", default=0)
+    created_at = models.DateTimeField("создано", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "предложение займа"
+        verbose_name_plural = "предложения займов"
+        ordering = ["id"]
+
+    def __str__(self):
+        return f"{self.lender} → {self.borrower}: {self.amount}"
 
 
 class DeckState(models.Model):

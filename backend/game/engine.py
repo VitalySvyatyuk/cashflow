@@ -19,6 +19,7 @@ from game.finance import (
     BANK_LOAN_STEP,
     BANK_LOAN_TITLE,
     MAX_CHILDREN,
+    loan_payment,
     receive,
     statement,
     take_bank_loan,
@@ -31,6 +32,7 @@ from game.models import (
     CellKind,
     Game,
     Liability,
+    LoanOffer,
     PendingAction,
     Player,
     Track,
@@ -955,7 +957,9 @@ def _check_repay(ctx):
     amount = ctx.params["amount"]
     if amount > liability.balance:
         raise GameError(f"Долг всего {_money(liability.balance)}.")
-    if liability.title == BANK_LOAN_TITLE:
+    if liability.lender_id:
+        pass  # долг игроку можно гасить любой суммой
+    elif liability.title == BANK_LOAN_TITLE:
         _check_loan_step(amount)
     elif amount != liability.balance:
         raise GameError("Этот долг гасится только целиком.")
@@ -968,10 +972,16 @@ def _run_repay(ctx):
     ctx.player.cash -= amount
     ctx.player.save(update_fields=["cash"])
     liability.balance -= amount
+    if liability.lender:
+        receive(liability.lender, amount)
     if liability.balance == 0:
         liability.delete()
     else:
-        liability.payment = int(liability.balance * BANK_LOAN_RATE)
+        liability.payment = (
+            loan_payment(liability.balance, liability.rate)
+            if liability.lender_id
+            else int(liability.balance * BANK_LOAN_RATE)
+        )
         liability.save()
     log_event(
         ctx.game,
@@ -980,6 +990,112 @@ def _run_repay(ctx):
         amount=amount,
         text=f"{ctx.player.name} гасит «{liability.title}» на {_money(amount)}",
     )
+
+
+# --- Займы между игроками --------------------------------------------------------------
+
+MAX_LOAN_RATE = 100
+
+
+def _parse_offer_loan(params):
+    return {
+        "borrower_id": parse_int(params.get("borrower_id"), "borrower_id"),
+        "amount": parse_int(params.get("amount"), "amount", 1),
+        "rate": parse_int(params.get("rate", 0), "rate", 0),
+    }
+
+
+def _borrower(ctx):
+    borrower = ctx.game.players.filter(id=ctx.params["borrower_id"]).first()
+    if borrower is None:
+        raise GameError("Игрок не найден.")
+    if borrower.id == ctx.player.id:
+        raise GameError("Нельзя дать в долг самому себе.")
+    return borrower
+
+
+def _check_offer_loan(ctx):
+    _borrower(ctx)
+    if ctx.params["rate"] > MAX_LOAN_RATE:
+        raise GameError(f"Процент — от 0 до {MAX_LOAN_RATE} в месяц.")
+    _need_cash(ctx.player, ctx.params["amount"])
+
+
+def _loan_terms(amount, rate):
+    payment = loan_payment(amount, rate)
+    return f"{_money(amount)} под {rate}% в месяц (платёж {_money(payment)})"
+
+
+def _run_offer_loan(ctx):
+    lender, borrower = ctx.player, _borrower(ctx)
+    amount, rate = ctx.params["amount"], ctx.params["rate"]
+    LoanOffer.objects.filter(game=ctx.game, lender=lender, borrower=borrower).delete()
+    LoanOffer.objects.create(
+        game=ctx.game, lender=lender, borrower=borrower, amount=amount, rate=rate
+    )
+    log_event(
+        ctx.game,
+        "loan_offered",
+        player=lender,
+        text=f"{lender.name} предлагает {borrower.name} в долг {_loan_terms(amount, rate)}",
+    )
+
+
+def _parse_loan_offer(params):
+    return {"offer_id": parse_int(params.get("offer_id"), "offer_id")}
+
+
+def _loan_offer(ctx):
+    offer = (
+        LoanOffer.objects.select_related("lender", "borrower")
+        .filter(game=ctx.game, id=ctx.params["offer_id"])
+        .first()
+    )
+    if offer is None or ctx.player.id not in (offer.lender_id, offer.borrower_id):
+        raise GameError("Предложение не найдено.")
+    return offer
+
+
+def _check_accept_loan(ctx):
+    offer = _loan_offer(ctx)
+    if offer.borrower_id != ctx.player.id:
+        raise GameError("Принять заём может только тот, кому его предложили.")
+    if offer.lender.cash < offer.amount:
+        raise GameError(f"У {offer.lender.name} уже нет {_money(offer.amount)}.")
+
+
+def _run_accept_loan(ctx):
+    offer = _loan_offer(ctx)
+    lender, borrower = offer.lender, ctx.player
+    lender.cash -= offer.amount
+    lender.save(update_fields=["cash"])
+    receive(borrower, offer.amount)
+    Liability.objects.create(
+        player=borrower,
+        lender=lender,
+        rate=offer.rate,
+        title=f"Долг игроку {lender.name}",
+        balance=offer.amount,
+        payment=loan_payment(offer.amount, offer.rate),
+    )
+    offer.delete()
+    log_event(
+        ctx.game,
+        "loan_accepted",
+        player=borrower,
+        text=f"{borrower.name} берёт в долг у {lender.name} "
+        f"{_loan_terms(offer.amount, offer.rate)}",
+    )
+
+
+def _run_decline_loan(ctx):
+    offer = _loan_offer(ctx)
+    offer.delete()
+    if ctx.player.id == offer.borrower_id:
+        text = f"{offer.borrower.name} отказывается от займа {offer.lender.name}"
+    else:
+        text = f"{offer.lender.name} отзывает предложение займа для {offer.borrower.name}"
+    log_event(ctx.game, "loan_declined", player=ctx.player, text=text)
 
 
 def _check_fast_track(ctx):
@@ -1086,14 +1202,7 @@ ACTIONS = {
         "Выбор сделки", AUTO, _run_choose_deal, parse=_parse_deal, phases=(P.CHOOSE_DEAL,)
     ),
     "buy": Action(
-        "Покупка",
-        APPROVE,
-        _run_buy,
-        _check_buy,
-        _parse_buy,
-        _describe_buy,
-        needs_approval=lambda ctx: _deal_card(ctx).effect.get("type") != "stock",
-        phases=(P.CARD,),
+        "Покупка", AUTO, _run_buy, _check_buy, _parse_buy, _describe_buy, phases=(P.CARD,)
     ),
     "sell": Action(
         "Продажа",
@@ -1121,7 +1230,7 @@ ACTIONS = {
     ),
     "buy_business": Action(
         "Покупка бизнеса",
-        APPROVE,
+        AUTO,
         _run_buy_business,
         _check_cell_purchase,
         describe=lambda ctx: f"купить «{_current_cell(ctx).title}»",
@@ -1134,6 +1243,35 @@ ACTIONS = {
         _check_cell_purchase,
         describe=lambda ctx: f"купить мечту «{_current_cell(ctx).title}»",
         phases=(P.DREAM,),
+    ),
+    "offer_loan": Action(
+        "Предложение займа",
+        AUTO,
+        _run_offer_loan,
+        _check_offer_loan,
+        _parse_offer_loan,
+        current_only=False,
+        undoable=False,
+        phase_bound=False,
+    ),
+    "accept_loan": Action(
+        "Заём у игрока",
+        AUTO,
+        _run_accept_loan,
+        _check_accept_loan,
+        _parse_loan_offer,
+        current_only=False,
+        phase_bound=False,
+    ),
+    "decline_loan": Action(
+        "Отказ от займа",
+        AUTO,
+        _run_decline_loan,
+        lambda ctx: _loan_offer(ctx),
+        _parse_loan_offer,
+        current_only=False,
+        undoable=False,
+        phase_bound=False,
     ),
     "take_loan": Action(
         "Кредит",
@@ -1152,6 +1290,8 @@ ACTIONS = {
         _check_repay,
         _parse_repay,
         lambda ctx: f"погасить «{_repay_target(ctx).title}» на {_money(ctx.params['amount'])}",
+        # Долг игроку гасят напрямую, без ведущего.
+        needs_approval=lambda ctx: _repay_target(ctx).lender_id is None,
         current_only=False,
         phase_bound=False,
     ),

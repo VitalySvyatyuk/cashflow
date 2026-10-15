@@ -14,6 +14,7 @@ import { GameOverBanner, closedInLobby } from "../components/GameOver";
 import { FinanceSummary } from "../components/finance/FinanceSummary";
 import { Modal } from "../components/Modal";
 import { PauseOverlay } from "../components/PauseOverlay";
+import { LendForm } from "../components/Loans";
 import { PlayerActions } from "../components/PlayerActions";
 import { PlayerList } from "../components/PlayerList";
 import { ProfessionIcon } from "../components/ProfessionIcon";
@@ -138,6 +139,9 @@ export function PlayerPage() {
           onClose={() => setViewing(null)}
         >
           <FinanceSheet player={viewingPlayer} readOnly={viewingPlayer.id !== me.id} />
+          {viewingPlayer.id !== me.id && view.status === "running" && (
+            <LendForm lender={me} borrower={viewingPlayer} />
+          )}
         </Modal>
       )}
       {showWelcome && me.profession && (
