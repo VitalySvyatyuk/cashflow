@@ -66,6 +66,10 @@ export interface PlayerState {
   charity_turns: number;
   skip_turns: number;
   fast_track_income: number;
+  /** Платил благотворительность в большом круге — выбор 1–3 кубиков до конца игры. */
+  fast_track_charity: boolean;
+  /** Сколько кубиков можно бросить сейчас (одно значение — без выбора). */
+  dice_options: number[];
   statement: Statement;
   assets: Asset[];
   liabilities: Liability[];

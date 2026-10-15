@@ -33,8 +33,9 @@ export function PlayerActions({
   const myRequests = state.pending_actions.filter((a) => a.player_id === me.id);
   const card = state.current_card;
   const isStock = card?.effect.type === "stock";
-  // Без выбора — как в правилах: 1 кубик на крысиных бегах, 2 на скоростной дорожке.
-  const diceCount = dice ?? (me.track === "rat_race" ? 1 : 2);
+  // По правилам: 1 кубик на малом круге, 2 на большом. Выбор — только после благотворительности.
+  const defaultDice = me.track === "rat_race" ? 1 : 2;
+  const diceCount = dice !== null && me.dice_options.includes(dice) ? dice : defaultDice;
 
   const button = (label: string, kind: string, params?: Record<string, unknown>) => (
     <button key={label} disabled={disabled} onClick={() => action(kind, params)}>
@@ -54,20 +55,29 @@ export function PlayerActions({
   if (myTurn) {
     switch (state.phase) {
       case "roll":
-        buttons.push(
-          <div key="dice-count" className="segmented" role="group" aria-label="Сколько кубиков">
-            {[1, 2, 3].map((n) => (
-              <button
-                key={n}
-                className={n === diceCount ? "active" : ""}
-                aria-pressed={n === diceCount}
-                onClick={() => setDice(n)}
-              >
-                {n}
-              </button>
-            ))}
-          </div>,
-        );
+        if (me.dice_options.length > 1) {
+          buttons.push(
+            <div key="dice-count" className="segmented" role="group" aria-label="Сколько кубиков">
+              {me.dice_options.map((n) => (
+                <button
+                  key={n}
+                  className={n === diceCount ? "active" : ""}
+                  aria-pressed={n === diceCount}
+                  onClick={() => setDice(n)}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>,
+          );
+          buttons.push(
+            <span key="dice-hint" className="muted small">
+              {me.track === "rat_race"
+                ? `благотворительность: ещё ${me.charity_turns} ${me.charity_turns === 1 ? "ход" : "хода"}`
+                : "благотворительность: до конца игры"}
+            </span>,
+          );
+        }
         buttons.push(button(`🎲 Бросить ${diceCount === 1 ? "кубик" : `${diceCount} кубика`}`, "roll", { dice: diceCount }));
         break;
       case "choose_deal":

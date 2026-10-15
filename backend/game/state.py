@@ -23,6 +23,7 @@ class LiabilitySerializer(serializers.ModelSerializer):
 class PlayerStateSerializer(serializers.ModelSerializer):
     profession = serializers.SerializerMethodField()
     statement = serializers.SerializerMethodField()
+    dice_options = serializers.SerializerMethodField()
     assets = AssetSerializer(many=True, read_only=True)
     liabilities = LiabilitySerializer(many=True, read_only=True)
 
@@ -41,10 +42,15 @@ class PlayerStateSerializer(serializers.ModelSerializer):
             "charity_turns",
             "skip_turns",
             "fast_track_income",
+            "fast_track_charity",
+            "dice_options",
             "statement",
             "assets",
             "liabilities",
         ]
+
+    def get_dice_options(self, player):
+        return player.dice_options()
 
     def get_statement(self, player):
         return statement(player).as_dict()

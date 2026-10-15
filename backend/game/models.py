@@ -271,6 +271,8 @@ class Player(models.Model):
     skip_turns = models.PositiveSmallIntegerField("пропустить ходов", default=0)
     # Доход в «День денежного потока» на скоростной дорожке.
     fast_track_income = models.PositiveIntegerField("доход скоростной дорожки", default=0)
+    # Благотворительность в большом круге: выбор 1–3 кубиков до конца игры.
+    fast_track_charity = models.BooleanField("благотворительность в большом круге", default=False)
     joined_at = models.DateTimeField("подключился", auto_now_add=True)
 
     class Meta:
@@ -284,6 +286,13 @@ class Player(models.Model):
 
     def __str__(self):
         return self.name
+
+    def dice_options(self):
+        """Сколько кубиков можно бросить. Малый круг: 1, после благотворительности
+        3 хода — 1 или 2. Большой круг: 2, после благотворительности — 1, 2 или 3."""
+        if self.track == Track.FAST_TRACK:
+            return [1, 2, 3] if self.fast_track_charity else [2]
+        return [1, 2] if self.charity_turns else [1]
 
 
 class Asset(models.Model):

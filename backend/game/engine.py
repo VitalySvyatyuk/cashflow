@@ -312,9 +312,6 @@ def _next_turn(game):
     )
 
 
-MIN_DICE, MAX_DICE = 1, 3
-
-
 def _default_dice(player):
     """Сколько кубиков, если игрок не выбрал сам."""
     return 1 if player.track == Track.RAT_RACE else 2
@@ -520,8 +517,15 @@ def _parse_roll(params):
 
 
 def _check_roll(ctx):
-    if not MIN_DICE <= ctx.params.get("dice", MIN_DICE) <= MAX_DICE:
-        raise GameError(f"Можно бросить от {MIN_DICE} до {MAX_DICE} кубиков.")
+    options = ctx.player.dice_options()
+    if ctx.params.get("dice", _default_dice(ctx.player)) not in options:
+        if len(options) == 1:
+            raise GameError(f"Сейчас можно бросить только {_dice_word(options[0])}.")
+        raise GameError(f"Можно бросить {' или '.join(map(str, options))} кубика.")
+
+
+def _dice_word(count):
+    return "1 кубик" if count == 1 else f"{count} кубика"
 
 
 def _run_roll(ctx):
@@ -782,14 +786,19 @@ def _run_charity(ctx):
     player = ctx.player
     amount = _charity_amount(ctx)
     pay(player, amount, "благотворительность")
-    player.charity_turns = CHARITY_TURNS
-    player.save(update_fields=["charity_turns"])
+    if player.track == Track.FAST_TRACK:
+        player.fast_track_charity = True
+        bonus = "до конца игры можно бросать 1, 2 или 3 кубика"
+    else:
+        player.charity_turns = CHARITY_TURNS
+        bonus = f"следующие {CHARITY_TURNS} хода можно бросать 1 или 2 кубика"
+    player.save(update_fields=["charity_turns", "fast_track_charity"])
     log_event(
         ctx.game,
         "charity",
         player=player,
         amount=amount,
-        text=f"{player.name} жертвует {_money(amount)}",
+        text=f"{player.name} жертвует {_money(amount)}: {bonus}",
     )
     _set_phase(ctx.game, Game.Phase.END_TURN)
 

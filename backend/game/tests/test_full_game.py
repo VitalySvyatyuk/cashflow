@@ -67,7 +67,7 @@ class Bot:
     def play_turn(self):
         game = self.game
         player = game.current_player
-        self.act(player, "roll", dice=self.rnd.choice([1, 2, 3]))
+        self.act(player, "roll", dice=self.rnd.choice(player.dice_options()))
 
         for _ in range(20):  # фаза меняется после каждого решения
             game.refresh_from_db()

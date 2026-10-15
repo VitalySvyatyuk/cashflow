@@ -24,6 +24,7 @@ PLAYER_FIELDS = [
     "charity_turns",
     "skip_turns",
     "fast_track_income",
+    "fast_track_charity",
 ]
 
 

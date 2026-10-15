@@ -166,6 +166,8 @@ def test_two_paychecks_in_one_move(started, masha):
     )
     first, second = cells[0], cells[1]
     place(masha, first - 1)
+    masha.charity_turns = 1  # два кубика — только после благотворительности
+    masha.save()
     cash, flow = masha.cash, statement(masha).cashflow
     steps = second - first + 1  # встаёт прямо на второй «Доход»
     act(started, masha, "roll", rnd=Dice(6, steps - 6), dice=2)
@@ -515,24 +517,85 @@ def test_charity(started, masha):
     assert fresh(started).phase == Game.Phase.END_TURN
 
 
-@pytest.mark.parametrize("count", [1, 2, 3])
-def test_player_chooses_dice_count(started, masha, count):
+def roll_with(game, player, count):
+    return act(game, player, "roll", rnd=Dice(*[1] * count), dice=count)
+
+
+def test_rat_race_rolls_one_die(started, masha):
     place(masha, 0)
-    act(started, masha, "roll", rnd=Dice(*[1] * count), dice=count)
-    assert fresh(started).dice == [1] * count
-    assert fresh(masha).position == count
+    roll_with(started, masha, 1)
+    assert fresh(started).dice == [1]
+    assert fresh(masha).position == 1
 
 
-@pytest.mark.parametrize("count", [0, 4])
-def test_dice_count_limits(started, masha, count):
-    with pytest.raises(GameError):
-        act(started, masha, "roll", rnd=Dice(1, 1, 1, 1), dice=count)
+@pytest.mark.parametrize("count", [0, 2, 3, 4])
+def test_rat_race_has_no_dice_choice(started, masha, count):
+    with pytest.raises(GameError, match="только 1 кубик|маленькое"):
+        roll_with(started, masha, count)
 
 
-def test_default_dice_count_by_track(started, masha):
-    place(masha, 0)
+def test_charity_on_rat_race_gives_one_or_two_dice_for_three_turns(started, masha):
+    masha.cash = 100000
+    masha.save()
+    place(masha, cell_position(CellKind.CHARITY) - 1)
     act(started, masha, "roll", rnd=Dice(1))
-    assert len(fresh(started).dice) == 1
+    approve(started, act(started, masha, "charity"))
+    masha.refresh_from_db()
+    assert masha.dice_options() == [1, 2]
+    started.phase = Game.Phase.ROLL
+    started.save()
+    with pytest.raises(GameError, match="1 или 2"):
+        roll_with(started, masha, 3)
+
+    for _ in range(3):
+        started.phase = Game.Phase.ROLL
+        started.save()
+        roll_with(started, masha, 2)
+    started.phase = Game.Phase.ROLL
+    started.save()
+    assert fresh(masha).dice_options() == [1]
+    with pytest.raises(GameError, match="только 1 кубик"):
+        roll_with(started, masha, 2)
+
+
+def test_fast_track_rolls_two_dice(started, masha):
+    place(masha, 0, Track.FAST_TRACK)
+    act(started, masha, "roll", rnd=Dice(1, 1))
+    assert fresh(started).dice == [1, 1]
+    with pytest.raises(GameError, match="только 2 кубика"):
+        started.phase = Game.Phase.ROLL
+        started.save()
+        roll_with(started, masha, 1)
+
+
+def test_charity_on_fast_track_gives_dice_choice_for_rest_of_game(started, masha):
+    place(masha, cell_position(CellKind.CHARITY, Track.FAST_TRACK), Track.FAST_TRACK)
+    masha.cash = 10_000_000
+    masha.save()
+    started.phase = Game.Phase.CHARITY
+    started.save()
+    approve(started, act(started, masha, "charity"))
+    masha.refresh_from_db()
+    assert masha.fast_track_charity
+    assert masha.charity_turns == 0
+    for count in (1, 2, 3, 3, 1):
+        started.phase = Game.Phase.ROLL
+        started.save()
+        roll_with(started, masha, count)
+        assert len(fresh(started).dice) == count
+    assert fresh(masha).dice_options() == [1, 2, 3]
+
+
+def test_undo_restores_fast_track_charity(started, masha):
+    place(masha, cell_position(CellKind.CHARITY, Track.FAST_TRACK), Track.FAST_TRACK)
+    masha.cash = 10_000_000
+    masha.save()
+    started.phase = Game.Phase.CHARITY
+    started.save()
+    host(started, "charity")
+    assert fresh(masha).fast_track_charity
+    host(started, "undo")
+    assert not fresh(masha).fast_track_charity
 
 
 # --- Кредиты ---------------------------------------------------------------------------
