@@ -6,7 +6,6 @@ export type Phase =
   | "choose_deal"
   | "card"
   | "pay"
-  | "market"
   | "charity"
   | "business"
   | "dream"
