@@ -7,8 +7,15 @@ seed — при каждом запуске получается один и т�
 import random
 
 from game.finance import rub
-from game.models import CardCategory, CellKind, Track
+from game.models import CardCategory, CardKind, CellKind, Track
 
+# Категории карточек при первом заполнении: название и цвет колоды.
+CATEGORY_NAMES = {
+    CardCategory.SMALL_DEAL: "Малая сделка",
+    CardCategory.BIG_DEAL: "Крупная сделка",
+    CardCategory.MARKET: "Рынок",
+    CardCategory.DOODAD: "Траты",
+}
 CARD_COLORS = {
     CardCategory.SMALL_DEAL: "#43a047",
     CardCategory.BIG_DEAL: "#1b5e20",
@@ -164,7 +171,9 @@ def build_cards(seed=2026):
                 "category": CardCategory.SMALL_DEAL,
                 "title": f"Акции {symbol} по {rub(price)}",
                 "text": f"Можно купить любое количество акций {symbol} по {rub(price)}.",
-                "effect": {"type": "stock", "symbol": symbol, "price": price},
+                "kind": CardKind.STOCK,
+                "symbol": symbol,
+                "price": price,
             }
         )
     for i in range(7):
@@ -176,14 +185,12 @@ def build_cards(seed=2026):
                 "category": CardCategory.SMALL_DEAL,
                 "title": f"{name} за {rub(cost)}",
                 "text": rnd.choice(FLAVOR),
-                "effect": {
-                    "type": "real_estate",
-                    "property": name,
-                    "cost": cost,
-                    "down_payment": down,
-                    "mortgage": cost - down,
-                    "cashflow": _round(rnd.randint(500, 4000), 100),
-                },
+                "kind": CardKind.REAL_ESTATE,
+                "property_name": name,
+                "cost": cost,
+                "down_payment": down,
+                "mortgage": cost - down,
+                "cashflow": _round(rnd.randint(500, 4000), 100),
             }
         )
 
@@ -196,14 +203,12 @@ def build_cards(seed=2026):
                 "category": CardCategory.BIG_DEAL,
                 "title": f"{name} за {rub(cost)}",
                 "text": rnd.choice(FLAVOR),
-                "effect": {
-                    "type": "real_estate",
-                    "property": name,
-                    "cost": cost,
-                    "down_payment": down,
-                    "mortgage": cost - down,
-                    "cashflow": _round(rnd.randint(8000, 60_000), 1000),
-                },
+                "kind": CardKind.REAL_ESTATE,
+                "property_name": name,
+                "cost": cost,
+                "down_payment": down,
+                "mortgage": cost - down,
+                "cashflow": _round(rnd.randint(8000, 60_000), 1000),
             }
         )
 
@@ -214,7 +219,9 @@ def build_cards(seed=2026):
                 "category": CardCategory.MARKET,
                 "title": f"Курс {symbol}: {rub(price)}",
                 "text": "Все владельцы акций могут продать их по этой цене.",
-                "effect": {"type": "stock_price", "symbol": symbol, "price": price},
+                "kind": CardKind.STOCK_PRICE,
+                "symbol": symbol,
+                "price": price,
             }
         )
     for name in SMALL_PROPERTIES[:4]:
@@ -224,7 +231,9 @@ def build_cards(seed=2026):
                 "category": CardCategory.MARKET,
                 "title": f"Покупатель на «{name}»",
                 "text": f"Предлагают {rub(price)} за объект «{name}».",
-                "effect": {"type": "sell_offer", "property": name, "price": price},
+                "kind": CardKind.SELL_OFFER,
+                "property_name": name,
+                "price": price,
             }
         )
 
@@ -235,13 +244,19 @@ def build_cards(seed=2026):
                 "category": CardCategory.DOODAD,
                 "title": title,
                 "text": f"Заплатите {rub(amount)}.",
-                "effect": {"type": "expense", "amount": amount},
+                "kind": CardKind.EXPENSE,
+                "amount": amount,
             }
         )
 
-    for card in cards:
-        card["color"] = CARD_COLORS[card["category"]]
     return cards
+
+
+def build_categories():
+    return [
+        {"deck": deck, "name": CATEGORY_NAMES[deck], "color": CARD_COLORS[deck]}
+        for deck in CardCategory
+    ]
 
 
 RAT_RACE_PATTERN = [

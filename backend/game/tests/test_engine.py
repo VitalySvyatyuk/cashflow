@@ -9,6 +9,8 @@ from game.models import (
     BoardCell,
     Card,
     CardCategory,
+    CardKind,
+    Category,
     CellKind,
     Game,
     Liability,
@@ -84,28 +86,29 @@ def open_card(game, card, phase=Game.Phase.CARD):
     game.save()
 
 
+def category(deck):
+    return Category.objects.get(deck=deck)
+
+
 def stock_card(price=10):
     return Card.objects.create(
-        category=CardCategory.SMALL_DEAL,
-        color="#000000",
+        category=category(CardCategory.SMALL_DEAL),
+        kind=CardKind.STOCK,
         title=f"Акции ТСТ по {price} ₽",
-        effect={"type": "stock", "symbol": "ТСТ", "price": price},
+        symbol="ТСТ",
+        price=price,
     )
 
 
 def house_card(cost=50000, down=5000, flow=200):
     return Card.objects.create(
-        category=CardCategory.SMALL_DEAL,
-        color="#000000",
+        category=category(CardCategory.SMALL_DEAL),
+        kind=CardKind.REAL_ESTATE,
         title=f"Дом 3/2 за {cost}",
-        effect={
-            "type": "real_estate",
-            "property": "Дом 3/2",
-            "cost": cost,
-            "down_payment": down,
-            "mortgage": cost - down,
-            "cashflow": flow,
-        },
+        property_name="Дом 3/2",
+        cost=cost,
+        down_payment=down,
+        cashflow=flow,
     )
 
 
@@ -189,7 +192,7 @@ def test_doodad_waits_for_player_to_pay(started, masha):
     act(started, masha, "roll", rnd=Dice(1))
     started.refresh_from_db()
     assert started.phase == Game.Phase.PAY
-    assert started.current_card.category == CardCategory.DOODAD
+    assert started.current_card.category.deck == CardCategory.DOODAD
     assert fresh(masha).cash == 100000  # пока не нажал «Заплатить»
     for kind in ("pass", "end_turn"):
         with pytest.raises(GameError, match="нельзя"):
@@ -282,7 +285,7 @@ def test_choose_deal_draws_card(started, masha):
     act(started, masha, "choose_deal", size="big")
     started.refresh_from_db()
     assert started.phase == Game.Phase.CARD
-    assert started.current_card.category == CardCategory.BIG_DEAL
+    assert started.current_card.category.deck == CardCategory.BIG_DEAL
 
 
 def test_buy_stock_without_approval(started, masha):
@@ -600,10 +603,11 @@ def test_sell_property_pays_off_mortgage(started, masha, petya):
         player=petya, title="Ипотека: Дом 3/2", balance=45000, payment=0, asset=house
     )
     offer = Card.objects.create(
-        category=CardCategory.MARKET,
-        color="#000000",
+        category=category(CardCategory.MARKET),
+        kind=CardKind.SELL_OFFER,
         title="Покупатель",
-        effect={"type": "sell_offer", "property": "Дом 3/2", "price": 70000},
+        property_name="Дом 3/2",
+        price=70000,
     )
     open_card(started, offer)
     cash = petya.cash
@@ -1122,12 +1126,12 @@ def test_bought_asset_keeps_card_description(started, masha):
 
 def test_deck_rebuilt_after_cards_replaced(started, masha):
     """После make seed-reset старые id в колоде пропадают — колода собирается заново."""
-    Card.objects.filter(category=CardCategory.DOODAD).delete()
+    Card.objects.filter(category__deck=CardCategory.DOODAD).delete()
     new = Card.objects.create(
-        category=CardCategory.DOODAD,
-        color="#000000",
+        category=category(CardCategory.DOODAD),
+        kind=CardKind.EXPENSE,
         title="Новая трата",
-        effect={"type": "expense", "amount": 500},
+        amount=500,
     )
     place(masha, cell_position(CellKind.DOODAD) - 1)
     act(started, masha, "roll", rnd=Dice(1))

@@ -101,9 +101,15 @@ class PendingActionSerializer(serializers.ModelSerializer):
 
 
 class CardSerializer(serializers.ModelSerializer):
+    # Экран знает колоду по коду; цвет и название — из категории.
+    category = serializers.CharField(source="category.deck")
+    category_name = serializers.CharField(source="category.name")
+    color = serializers.CharField(source="category.color")
+    effect = serializers.DictField(read_only=True)
+
     class Meta:
         model = Card
-        fields = ["id", "category", "color", "title", "text", "effect"]
+        fields = ["id", "category", "category_name", "color", "title", "text", "effect"]
 
 
 class CellSerializer(serializers.ModelSerializer):
@@ -119,7 +125,7 @@ class EventSerializer(serializers.ModelSerializer):
 
 
 def build_state(game_id):
-    game = Game.objects.select_related("current_card").get(pk=game_id)
+    game = Game.objects.select_related("current_card__category").get(pk=game_id)
     players = game.players.select_related("profession").prefetch_related(
         "assets", "liabilities", "loans_given"
     )

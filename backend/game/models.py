@@ -2,6 +2,7 @@ import secrets
 import uuid
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.validators import (
     FileExtensionValidator,
     MaxValueValidator,
@@ -64,14 +65,81 @@ class CardCategory(models.TextChoices):
     DOODAD = "doodad", "Траты"
 
 
+class CardKind(models.TextChoices):
+    STOCK = "stock", "Акции: можно купить"
+    REAL_ESTATE = "real_estate", "Недвижимость или бизнес: можно купить"
+    STOCK_PRICE = "stock_price", "Рынок: новый курс акций"
+    SELL_OFFER = "sell_offer", "Рынок: покупатель на объект"
+    EXPENSE = "expense", "Траты: заплатить"
+
+
+# Какие поля нужны для каждого типа карточки и в каких колодах он бывает.
+CARD_KIND_FIELDS = {
+    CardKind.STOCK: ["symbol", "price"],
+    CardKind.REAL_ESTATE: ["property_name", "cost", "down_payment", "cashflow"],
+    CardKind.STOCK_PRICE: ["symbol", "price"],
+    CardKind.SELL_OFFER: ["property_name", "price"],
+    CardKind.EXPENSE: ["amount"],
+}
+CARD_KIND_CATEGORIES = {
+    CardKind.STOCK: [CardCategory.SMALL_DEAL, CardCategory.BIG_DEAL],
+    CardKind.REAL_ESTATE: [CardCategory.SMALL_DEAL, CardCategory.BIG_DEAL],
+    CardKind.STOCK_PRICE: [CardCategory.MARKET],
+    CardKind.SELL_OFFER: [CardCategory.MARKET],
+    CardKind.EXPENSE: [CardCategory.DOODAD],
+}
+# Поле модели → ключ в effect, если они различаются.
+EFFECT_KEYS = {"property_name": "property"}
+
+
+class Category(models.Model):
+    """Категория карточек: название и цвет, а колода (deck) говорит движку,
+    когда её тянуть — малая или крупная сделка, рынок, траты."""
+
+    deck = models.CharField("колода", max_length=20, choices=CardCategory.choices, unique=True)
+    name = models.CharField("название", max_length=100)
+    color = models.CharField("цвет", max_length=7, default="#757575")
+
+    class Meta:
+        verbose_name = "категория карточек"
+        verbose_name_plural = "категории карточек"
+        ordering = ["id"]
+
+    def __str__(self):
+        return self.name
+
+
 class Card(models.Model):
-    category = models.CharField("категория", max_length=20, choices=CardCategory.choices)
-    color = models.CharField("цвет", max_length=7, help_text="HEX, например #43a047")
+    category = models.ForeignKey(
+        Category, on_delete=models.PROTECT, related_name="cards", verbose_name="категория"
+    )
+    kind = models.CharField("тип", max_length=20, choices=CardKind.choices)
     title = models.CharField("название", max_length=200)
     text = models.TextField("текст", blank=True)
-    # Параметры для движка: тип сделки, цена, взнос, денежный поток и т.п.
-    effect = models.JSONField("эффект", default=dict, blank=True)
     is_active = models.BooleanField("в колоде", default=True)
+
+    # Параметры для движка. Какие заполнять — зависит от типа (см. CARD_KIND_FIELDS).
+    symbol = models.CharField(
+        "тикер акций", max_length=20, blank=True, help_text="Например, ВКУС. Для акций и курса."
+    )
+    property_name = models.CharField(
+        "объект",
+        max_length=100,
+        blank=True,
+        help_text="Например, «Дом 3/2». Покупатель с карточки рынка ищет объект с таким же именем.",
+    )
+    price = models.PositiveIntegerField(
+        "цена", null=True, blank=True, help_text="За одну акцию или сколько предлагает покупатель."
+    )
+    cost = models.PositiveIntegerField("стоимость", null=True, blank=True)
+    down_payment = models.PositiveIntegerField("первый взнос", null=True, blank=True)
+    mortgage = models.PositiveIntegerField(
+        "ипотека", null=True, blank=True, help_text="Пусто — стоимость минус первый взнос."
+    )
+    cashflow = models.IntegerField(
+        "денежный поток в месяц", null=True, blank=True, help_text="Может быть отрицательным."
+    )
+    amount = models.PositiveIntegerField("сумма к оплате", null=True, blank=True)
 
     class Meta:
         verbose_name = "карточка"
@@ -82,7 +150,52 @@ class Card(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.get_category_display()}: {self.title}"
+        return self.title
+
+    def save(self, *args, **kwargs):
+        if (
+            self.kind == CardKind.REAL_ESTATE
+            and self.mortgage is None
+            and self.cost is not None
+            and self.down_payment is not None
+        ):
+            self.mortgage = self.cost - self.down_payment
+        super().save(*args, **kwargs)
+
+    def clean(self):
+        errors = {}
+        deck = self.category.deck if self.category_id else None
+        if self.kind and deck and deck not in CARD_KIND_CATEGORIES[self.kind]:
+            allowed = ", ".join(CardCategory(c).label for c in CARD_KIND_CATEGORIES[self.kind])
+            errors["kind"] = f"Этот тип бывает только в колодах: {allowed}."
+        for name in CARD_KIND_FIELDS.get(self.kind, []):
+            if getattr(self, name) in (None, ""):
+                errors[name] = "Нужно для этого типа карточки."
+        if (
+            self.kind == CardKind.REAL_ESTATE
+            and self.cost is not None
+            and self.down_payment is not None
+            and self.down_payment > self.cost
+        ):
+            errors["down_payment"] = "Взнос больше стоимости."
+        if errors:
+            raise ValidationError(errors)
+
+    @property
+    def color(self):
+        return self.category.color
+
+    @property
+    def effect(self):
+        """Параметры одним словарём — в таком виде их читают движок и экран."""
+        data = {"type": self.kind}
+        for name in CARD_KIND_FIELDS.get(self.kind, []) + (
+            ["mortgage"] if self.kind == CardKind.REAL_ESTATE else []
+        ):
+            value = getattr(self, name)
+            if value not in (None, ""):
+                data[EFFECT_KEYS.get(name, name)] = value
+        return data
 
 
 class CellKind(models.TextChoices):

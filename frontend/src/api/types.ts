@@ -118,7 +118,10 @@ export interface GameEvent {
 
 export interface Card {
   id: number;
+  /** Колода: по ней движок решает, когда тянуть карточку. */
   category: "small_deal" | "big_deal" | "market" | "doodad";
+  /** Название и цвет категории — задаются в админке. */
+  category_name: string;
   color: string;
   title: string;
   text: string;

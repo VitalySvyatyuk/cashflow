@@ -1,4 +1,5 @@
 import pytest
+from django.core.exceptions import ValidationError
 from django.core.management import call_command
 from django.db import IntegrityError, transaction
 
@@ -8,6 +9,8 @@ from game.models import (
     BoardCell,
     Card,
     CardCategory,
+    CardKind,
+    Category,
     Game,
     Player,
     Profession,
@@ -57,7 +60,12 @@ def test_seed_is_idempotent():
 
 def test_seed_reset_removes_stale_cards():
     call_command("seed", stdout=None)
-    Card.objects.create(category=CardCategory.DOODAD, color="#000000", title="Устаревшая")
+    Card.objects.create(
+        category=Category.objects.get(deck=CardCategory.DOODAD),
+        kind=CardKind.EXPENSE,
+        title="Устаревшая",
+        amount=1,
+    )
     call_command("seed", reset=True, stdout=None)
     assert not Card.objects.filter(title="Устаревшая").exists()
     assert Card.objects.count() == len(build_cards())
@@ -80,10 +88,51 @@ def test_seed_is_deterministic():
     assert build_cells() == build_cells()
 
 
-def test_card_colors_are_hex():
+def test_seed_creates_categories_once():
     call_command("seed", stdout=None)
-    for color in Card.objects.values_list("color", flat=True):
-        assert len(color) == 7 and color.startswith("#")
+    assert set(Category.objects.values_list("deck", flat=True)) == set(CardCategory)
+    small = Category.objects.get(deck=CardCategory.SMALL_DEAL)
+    small.name, small.color = "Мелочь", "#123456"
+    small.save()
+    call_command("seed", stdout=None)  # название и цвет из админки не затираются
+    small.refresh_from_db()
+    assert (small.name, small.color) == ("Мелочь", "#123456")
+    assert Card.objects.filter(category=small).first().color == "#123456"
+
+
+def test_card_effect_from_fields():
+    call_command("seed", stdout=None)
+    card = Card(
+        category=Category.objects.get(deck=CardCategory.BIG_DEAL),
+        kind=CardKind.REAL_ESTATE,
+        title="Дом",
+        property_name="Дом",
+        cost=100,
+        down_payment=20,
+        cashflow=5,
+    )
+    card.save()
+    assert card.effect == {
+        "type": "real_estate",
+        "property": "Дом",
+        "cost": 100,
+        "down_payment": 20,
+        "cashflow": 5,
+        "mortgage": 80,  # посчитана сама
+    }
+
+
+def test_card_validation_by_kind():
+    call_command("seed", stdout=None)
+    card = Card(
+        category=Category.objects.get(deck=CardCategory.MARKET),
+        kind=CardKind.STOCK,
+        title="Акции",
+        symbol="ТСТ",
+    )
+    with pytest.raises(ValidationError) as error:
+        card.full_clean()
+    assert set(error.value.message_dict) >= {"kind", "price"}
 
 
 def test_game_code_is_four_digits(host):

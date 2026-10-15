@@ -1,10 +1,15 @@
+import json
+
+from django import forms
 from django.contrib import admin
 from django.utils.html import format_html
 
 from game.models import (
+    CARD_KIND_FIELDS,
     Asset,
     BoardCell,
     Card,
+    Category,
     DeckState,
     Game,
     GameEvent,
@@ -15,16 +20,17 @@ from game.models import (
 )
 
 
+@admin.display(description="цвет")
 def color_swatch(obj):
     return format_html(
-        '<span style="display:inline-block;width:14px;height:14px;border-radius:3px;'
-        'background:{};vertical-align:middle"></span> {}',
-        obj.color,
+        '<span style="display:inline-block;width:22px;height:16px;border-radius:3px;'
+        'background:{};vertical-align:middle"></span>',
         obj.color,
     )
 
 
-color_swatch.short_description = "цвет"
+# Цвет выбирается палитрой, а не вводом кода.
+COLOR_WIDGETS = {"color": forms.TextInput(attrs={"type": "color"})}
 
 
 @admin.display(description="иконка")
@@ -54,17 +60,89 @@ class ProfessionAdmin(admin.ModelAdmin):
     ]
 
 
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ["name", color_swatch, "deck", "card_count"]
+
+    def get_form(self, request, obj=None, **kwargs):
+        return super().get_form(request, obj, widgets=COLOR_WIDGETS, **kwargs)
+
+    @admin.display(description="карточек")
+    def card_count(self, obj):
+        return obj.cards.count()
+
+
+class CardForm(forms.ModelForm):
+    class Meta:
+        model = Card
+        fields = [
+            "category",
+            "kind",
+            "title",
+            "text",
+            "is_active",
+            "symbol",
+            "property_name",
+            "price",
+            "cost",
+            "down_payment",
+            "mortgage",
+            "cashflow",
+            "amount",
+        ]
+        # Какие поля показывать для выбранного типа — см. card_admin.js.
+        widgets = {
+            "kind": forms.Select(
+                attrs={
+                    "data-kind-fields": json.dumps(
+                        {
+                            k: f + (["mortgage"] if k == "real_estate" else [])
+                            for k, f in CARD_KIND_FIELDS.items()
+                        }
+                    )
+                }
+            )
+        }
+
+
 @admin.register(Card)
 class CardAdmin(admin.ModelAdmin):
-    list_display = ["title", "category", color_swatch, "is_active"]
-    list_filter = ["category", "is_active"]
-    search_fields = ["title", "text"]
+    form = CardForm
+    list_display = ["title", "category", "kind", "is_active"]
+    list_filter = ["category", "kind", "is_active"]
+    list_select_related = ["category"]
+    search_fields = ["title", "text", "symbol", "property_name"]
+    fieldsets = [
+        (None, {"fields": ["category", "kind", "title", "text", "is_active"]}),
+        (
+            "Параметры",
+            {
+                "description": "Показаны только поля, нужные для выбранного типа.",
+                "fields": [
+                    "symbol",
+                    "property_name",
+                    "price",
+                    "cost",
+                    "down_payment",
+                    "mortgage",
+                    "cashflow",
+                    "amount",
+                ],
+            },
+        ),
+    ]
+
+    class Media:
+        js = ["game/card_admin.js"]
 
 
 @admin.register(BoardCell)
 class BoardCellAdmin(admin.ModelAdmin):
     list_display = ["position", "track", "kind", color_swatch, "title"]
     list_filter = ["track", "kind"]
+
+    def get_form(self, request, obj=None, **kwargs):
+        return super().get_form(request, obj, widgets=COLOR_WIDGETS, **kwargs)
 
 
 class PlayerInline(admin.TabularInline):

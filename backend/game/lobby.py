@@ -102,7 +102,9 @@ def start_game(game, rnd=random):
 
         for category in CardCategory:
             ids = list(
-                Card.objects.filter(category=category, is_active=True).values_list("id", flat=True)
+                Card.objects.filter(category__deck=category, is_active=True).values_list(
+                    "id", flat=True
+                )
             )
             rnd.shuffle(ids)
             DeckState.objects.create(game=game, category=category, card_ids=ids)

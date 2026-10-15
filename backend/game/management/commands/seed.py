@@ -1,8 +1,14 @@
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from game.models import BoardCell, Card, Profession
-from game.seed_data import PROFESSIONS, RENAMED_PROFESSIONS, build_cards, build_cells
+from game.models import BoardCell, Card, Category, Profession
+from game.seed_data import (
+    PROFESSIONS,
+    RENAMED_PROFESSIONS,
+    build_cards,
+    build_categories,
+    build_cells,
+)
 
 
 class Command(BaseCommand):
@@ -25,7 +31,13 @@ class Command(BaseCommand):
                 Profession.objects.filter(name=old).update(name=new)
         for data in PROFESSIONS:
             Profession.objects.update_or_create(name=data["name"], defaults=data)
+        # Категории не перезаписываем: название и цвет могли поменять в админке.
+        categories = {
+            data["deck"]: Category.objects.get_or_create(deck=data["deck"], defaults=data)[0]
+            for data in build_categories()
+        }
         for data in build_cards():
+            data["category"] = categories[data["category"]]
             Card.objects.update_or_create(
                 category=data["category"], title=data["title"], defaults=data
             )

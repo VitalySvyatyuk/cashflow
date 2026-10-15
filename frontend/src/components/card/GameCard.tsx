@@ -5,13 +5,6 @@ import type { Asset, Card, GameState, PlayerState } from "../../api/types";
 import { money } from "../../lib/format";
 import { useGame } from "../../store/game";
 
-const CATEGORY = {
-  small_deal: "Малая сделка",
-  big_deal: "Крупная сделка",
-  market: "Рынок",
-  doodad: "Траты",
-};
-
 interface Effect {
   type?: string;
   symbol?: string;
@@ -41,7 +34,7 @@ export function GameCard({ state, me }: { state: GameState; me: PlayerState | nu
   if (collapsed) {
     return (
       <button className="card-chip" style={{ background: card.color }} onClick={() => setCollapsed(false)}>
-        {CATEGORY[card.category]}: {card.title} ▸
+        {card.category_name}: {card.title} ▸
       </button>
     );
   }
@@ -56,7 +49,7 @@ export function GameCard({ state, me }: { state: GameState; me: PlayerState | nu
       transition={{ duration: 0.35, ease: "easeOut" }}
     >
       <div className="card-category" style={{ background: card.color }}>
-        <span>{CATEGORY[card.category]}</span>
+        <span>{card.category_name}</span>
         <button className="link light" onClick={() => setCollapsed(true)} title="Свернуть, чтобы видеть поле">
           свернуть
         </button>

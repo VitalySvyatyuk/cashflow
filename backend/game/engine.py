@@ -474,7 +474,7 @@ def _draw(ctx, category):
                     "card_drawn",
                     player=ctx.player,
                     card_id=card.id,
-                    category=card.category,
+                    category=card.category.deck,
                     text=f"{ctx.player.name} тянет карточку «{card.title}»",
                 )
                 return card
@@ -482,7 +482,9 @@ def _draw(ctx, category):
         # (например, make seed-reset), собираем колоду из тех, что есть сейчас.
         if not existing:
             deck.card_ids = list(
-                Card.objects.filter(category=category, is_active=True).values_list("id", flat=True)
+                Card.objects.filter(category__deck=category, is_active=True).values_list(
+                    "id", flat=True
+                )
             )
             existing = set(deck.card_ids)
         ctx.rnd.shuffle(deck.card_ids)
@@ -623,7 +625,7 @@ def _check_end_turn(ctx):
 
 def _deal_card(ctx):
     card = ctx.game.current_card
-    if card is None or card.category not in (CardCategory.SMALL_DEAL, CardCategory.BIG_DEAL):
+    if card is None or card.category.deck not in (CardCategory.SMALL_DEAL, CardCategory.BIG_DEAL):
         raise GameError("Нет открытой сделки.")
     return card
 
@@ -821,7 +823,7 @@ def _offer_candidates(ctx):
     elif (
         game.phase == Game.Phase.CARD
         and card is not None
-        and card.category in (CardCategory.SMALL_DEAL, CardCategory.BIG_DEAL)
+        and card.category.deck in (CardCategory.SMALL_DEAL, CardCategory.BIG_DEAL)
         and card.effect.get("type") == "real_estate"
     ):
         track = Track.RAT_RACE
