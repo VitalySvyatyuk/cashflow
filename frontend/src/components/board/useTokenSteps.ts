@@ -24,7 +24,20 @@ export function useTokenSteps() {
     const at = (time: number, fn: () => void) =>
       timers.push(window.setTimeout(fn, Math.max(0, time - Date.now())));
 
-    const unsubscribe = onGameEvent((event) => {
+    const unsubscribe = onGameEvent((event, _state, previous) => {
+      // Бросок приходит уже с конечной позицией фишки, а шаги начнутся по событию
+      // moved. Чтобы фишка не мелькнула на месте назначения, сразу держим её там,
+      // где она стояла до броска (если она ещё идёт прошлый ход — не трогаем).
+      if (event.kind === "dice_rolled" && event.player_id != null) {
+        const playerId = event.player_id;
+        const before = previous?.players.find((p) => p.id === playerId);
+        if (before) {
+          setOverrides((o) =>
+            o[playerId] ? o : { ...o, [playerId]: { track: before.track, position: before.position } },
+          );
+        }
+        return;
+      }
       const move = event.kind === "moved" ? moveFor(event.seq) : undefined;
       if (!move) return;
       const { playerId, track, start, path, startAt } = move;

@@ -4,7 +4,8 @@ import { GameSocket, type ConnectionStatus } from "../api/socket";
 import type { GameEvent, GameState, PlayerState, Presence, Role } from "../api/types";
 import { msUntilArrival, recordMove, resetMoves } from "../lib/movement";
 
-type Listener = (event: GameEvent, state: GameState) => void;
+/** previous — состояние до этого события (например, где фишка стояла до броска). */
+type Listener = (event: GameEvent, state: GameState, previous: GameState | null) => void;
 
 interface GameStore {
   connection: ConnectionStatus;
@@ -97,12 +98,16 @@ export const useGame = create<GameStore>((set, get) => {
               set({ state: message.state });
               settle(message.state);
               break;
-            case "event":
+            case "event": {
+              const previous = get().state;
               recordMove(message.event); // до подписчиков: им нужно расписание хода
               set({ state: message.state });
               settle(message.state);
-              listeners.forEach((l) => l(message.event, message.state));
+              // Подписчики вызываются в той же задаче — React отрисует новое состояние
+              // вместе с их правками (например, фишка остаётся на старте до анимации).
+              listeners.forEach((l) => l(message.event, message.state, previous));
               break;
+            }
             case "error":
               set({ error: message.message });
               break;
