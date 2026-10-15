@@ -15,7 +15,7 @@ import { EventLog } from "../components/EventLog";
 import { PlayerActions } from "../components/PlayerActions";
 import { ProfessionIcon } from "../components/ProfessionIcon";
 import { GameOverBanner, closedInLobby } from "../components/GameOver";
-import { ApprovalQueue, FastTrackButton, FinishGameButton, HostControls } from "../components/HostPanel";
+import { ApprovalQueue, FastTrackButton, HostControls } from "../components/HostPanel";
 import { Toast } from "../components/Toast";
 import { money } from "../lib/format";
 import { useCurrentPlayer, useGame } from "../store/game";
@@ -90,7 +90,6 @@ function HostLobby({ state }: { state: GameState }) {
         <button disabled={!state.players.length} onClick={() => run(api.start(state.code))}>
           Начать игру
         </button>
-        <FinishGameButton state={state} />
         <ConnectionBadge />
       </div>
       <Toast />

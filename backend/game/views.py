@@ -8,6 +8,7 @@ from rest_framework.response import Response
 
 from game import lobby
 from game.auth import IsHost, get_player
+from game.engine import HOST_ACTOR, submit_action
 from game.models import Game
 from game.serializers import (
     CreateGameSerializer,
@@ -93,6 +94,15 @@ def kick(request, code, player_id):
 @permission_classes([IsHost])
 def start(request, code):
     game = _run(lobby.start_game, _game(code))
+    return _game_response(game)
+
+
+@api_view(["POST"])
+@permission_classes([IsHost])
+def finish(request, code):
+    """Ведущий завершает игру со стартового экрана — как действие finish_game."""
+    game = _game(code)
+    _run(submit_action, game, HOST_ACTOR, "finish_game")
     return _game_response(game)
 
 

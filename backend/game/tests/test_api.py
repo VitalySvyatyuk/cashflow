@@ -91,3 +91,14 @@ def test_login_flow(api, host):
     )
     assert response.data == {"user": {"username": "host", "is_host": True}}
     assert api.get("/api/auth/session/").data["user"]["is_host"] is True
+
+
+def test_host_finishes_game_from_dashboard(host_api, api, game, seeded):
+    url = f"/api/games/{game.code}/finish/"
+    assert api.post(url).status_code in (401, 403)
+    response = host_api.post(url)
+    assert response.status_code == 200
+    assert response.json()["status"] == "finished"
+    again = host_api.post(url)
+    assert again.status_code == 400
+    assert "завершена" in again.json()["detail"]

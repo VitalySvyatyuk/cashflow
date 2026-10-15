@@ -3,7 +3,7 @@
 	encode zstd gzip
 
 	# API, WebSocket и админка — в Django
-	@backend path /api/* /ws/* /admin/*
+	@backend path /api/* /ws/* /admin /admin/*
 	handle @backend {
 		reverse_proxy backend:8000
 	}

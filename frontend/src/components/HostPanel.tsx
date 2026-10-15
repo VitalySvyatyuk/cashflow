@@ -114,55 +114,8 @@ export function HostControls({ state }: { state: GameState }) {
       <button onClick={() => setAdjusting(true)} title="Начислить или списать деньги">
         ₽ <span className="label">Деньги</span>
       </button>
-      <FinishGameButton state={state} />
       {adjusting && <AdjustCash state={state} onClose={() => setAdjusting(false)} />}
     </div>
-  );
-}
-
-/** «Завершить игру» с подтверждением: игра закрывается для всех игроков. */
-export function FinishGameButton({ state }: { state: GameState }) {
-  const action = useGame((s) => s.action);
-  const [confirming, setConfirming] = useState(false);
-  const lobby = state.status === "lobby";
-
-  return (
-    <>
-      <button
-        className="danger"
-        onClick={() => setConfirming(true)}
-        disabled={state.status === "finished"}
-        title="Завершить игру для всех"
-      >
-        ⏹ <span className="label">Завершить игру</span>
-      </button>
-      {confirming && (
-        <Modal title="Завершить игру?" onClose={() => setConfirming(false)}>
-          <div className="form">
-            <p>
-              {lobby
-                ? "Игра закроется, игроки больше не смогут в неё войти."
-                : "Игра остановится у всех игроков. Победителя не будет."}
-              {!lobby && " Если нажали по ошибке — «Отменить» вернёт игру."}
-            </p>
-            <div className="row">
-              <button
-                className="danger"
-                onClick={() => {
-                  action("finish_game");
-                  setConfirming(false);
-                }}
-              >
-                Завершить игру
-              </button>
-              <button className="secondary" onClick={() => setConfirming(false)}>
-                Продолжить игру
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
-    </>
   );
 }
 

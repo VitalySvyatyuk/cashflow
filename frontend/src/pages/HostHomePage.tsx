@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router";
 
 import { api } from "../api/http";
 import type { LobbyGame, SessionUser } from "../api/types";
+import { Modal } from "../components/Modal";
 import { useHostSession } from "./useHostSession";
 
 const STATUS = { lobby: "сбор игроков", running: "идёт", paused: "на паузе", finished: "завершена" };
@@ -54,6 +55,17 @@ function HostDashboard({ onLogout }: { onLogout: () => void }) {
   const [games, setGames] = useState<LobbyGame[]>([]);
   const [maxPlayers, setMaxPlayers] = useState(4);
   const [error, setError] = useState("");
+  const [finishing, setFinishing] = useState<LobbyGame | null>(null);
+
+  async function finish(game: LobbyGame) {
+    setFinishing(null);
+    try {
+      const updated = await api.finish(game.code);
+      setGames((list) => list.map((g) => (g === game ? updated : g)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось завершить игру.");
+    }
+  }
 
   useEffect(() => {
     api.games().then(setGames, () => setError("Не удалось загрузить игры."));
@@ -92,12 +104,38 @@ function HostDashboard({ onLogout }: { onLogout: () => void }) {
         <h2>Мои игры</h2>
         <ul className="games">
           {games.map((g) => (
-            <li key={g.code}>
-              <Link to={`/host/${g.code}`}>Игра {g.code}</Link> · {STATUS[g.status]} ·{" "}
-              {g.players.length}/{g.max_players} игроков
+            <li key={`${g.code}-${g.created_at}`} className="row spread">
+              <span>
+                <Link to={`/host/${g.code}`}>Игра {g.code}</Link> · {STATUS[g.status]} ·{" "}
+                {g.players.length}/{g.max_players} игроков
+              </span>
+              {g.status !== "finished" && (
+                <button className="danger small-button" onClick={() => setFinishing(g)}>
+                  Завершить игру
+                </button>
+              )}
             </li>
           ))}
         </ul>
+        {finishing && (
+          <Modal title={`Завершить игру ${finishing.code}?`} onClose={() => setFinishing(null)}>
+            <div className="form">
+              <p>
+                {finishing.status === "lobby"
+                  ? "Игра закроется, игроки больше не смогут в неё войти."
+                  : "Игра остановится у всех игроков, победителя не будет. Если нажали по ошибке — откройте игру и нажмите «Отменить»."}
+              </p>
+              <div className="row">
+                <button className="danger" onClick={() => finish(finishing)}>
+                  Завершить игру
+                </button>
+                <button className="secondary" onClick={() => setFinishing(null)}>
+                  Не завершать
+                </button>
+              </div>
+            </div>
+          </Modal>
+        )}
       </div>
     </main>
   );

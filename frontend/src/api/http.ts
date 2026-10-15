@@ -56,4 +56,5 @@ export const api = {
   kick: (code: string, playerId: number) =>
     request<LobbyGame>("DELETE", `/games/${code}/players/${playerId}/`),
   start: (code: string) => request<LobbyGame>("POST", `/games/${code}/start/`),
+  finish: (code: string) => request<LobbyGame>("POST", `/games/${code}/finish/`),
 };
