@@ -11,7 +11,7 @@ RECENT_EVENTS = 50
 class AssetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Asset
-        fields = ["id", "kind", "title", "key", "quantity", "cost", "cashflow"]
+        fields = ["id", "kind", "title", "description", "key", "quantity", "cost", "cashflow"]
 
 
 class LiabilitySerializer(serializers.ModelSerializer):

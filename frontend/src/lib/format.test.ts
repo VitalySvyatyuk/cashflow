@@ -4,8 +4,8 @@ import { money, textOn } from "./format";
 
 describe("format", () => {
   it("деньги с разделителями и знаком минус", () => {
-    expect(money(2600).replace(/\s/g, " ")).toBe("$2 600");
-    expect(money(-500)).toBe("−$500");
+    expect(money(25000).replace(/\s/g, " ")).toBe("25 000 ₽");
+    expect(money(-500).replace(/\s/g, " ")).toBe("−500 ₽");
   });
 
   it("на жёлтом — тёмный текст, на синем — белый", () => {

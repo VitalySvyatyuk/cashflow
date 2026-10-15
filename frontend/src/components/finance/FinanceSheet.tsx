@@ -66,7 +66,11 @@ export function FinanceSheet({
           {player.assets.length === 0 && <p className="muted">Пока нет</p>}
           {player.assets.map((a) => (
             <div key={a.id} className="sheet-row">
-              <span>{assetLabel(a)}</span>
+              <span>
+                {assetLabel(a)}
+                {a.cashflow !== 0 && <span className="muted"> · {money(a.cashflow)} в месяц</span>}
+                {a.description && <div className="muted small">{a.description}</div>}
+              </span>
               <span className="muted">
                 {a.kind === "stock" ? `по ${money(a.cost)}` : money(a.cost)}
               </span>

@@ -148,11 +148,11 @@ async def test_actions_over_websocket(game, host, seeded):
 
     # Заявка на кредит → ведущий видит её в состоянии → одобряет
     await player_ws.send_json_to(
-        {"type": "action", "kind": "take_loan", "params": {"amount": 1000}}
+        {"type": "action", "kind": "take_loan", "params": {"amount": 10_000}}
     )
     requested = await receive_until(host_ws, "action_requested")
     [pending] = requested["state"]["pending_actions"]
-    assert pending["description"] == "взять кредит $1 000"
+    assert pending["description"] == "взять кредит 10\xa0000\xa0₽"
 
     await player_ws.send_json_to({"type": "decide", "id": pending["id"], "approve": True})
     assert await receive_until(player_ws, "action_requested")  # своё же событие

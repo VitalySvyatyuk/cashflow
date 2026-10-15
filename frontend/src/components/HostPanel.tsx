@@ -1,13 +1,14 @@
 import { useState } from "react";
 
-import type { GameState, PendingAction } from "../api/types";
+import type { GameState, PendingAction, PlayerState } from "../api/types";
+import { money } from "../lib/format";
 import { useGame } from "../store/game";
 import { Modal } from "./Modal";
 
 // Какие параметры заявки ведущий может поправить перед одобрением.
 const EDITABLE: Record<string, string> = {
   quantity: "Количество",
-  amount: "Сумма, $",
+  amount: "Сумма, ₽",
 };
 
 export function ApprovalQueue({ state }: { state: GameState }) {
@@ -111,10 +112,78 @@ export function HostControls({ state }: { state: GameState }) {
         ⏭ <span className="label">Передать ход</span>
       </button>
       <button onClick={() => setAdjusting(true)} title="Начислить или списать деньги">
-        $ <span className="label">Деньги</span>
+        ₽ <span className="label">Деньги</span>
       </button>
+      <FinishGameButton state={state} />
       {adjusting && <AdjustCash state={state} onClose={() => setAdjusting(false)} />}
     </div>
+  );
+}
+
+/** «Завершить игру» с подтверждением: игра закрывается для всех игроков. */
+export function FinishGameButton({ state }: { state: GameState }) {
+  const action = useGame((s) => s.action);
+  const [confirming, setConfirming] = useState(false);
+  const lobby = state.status === "lobby";
+
+  return (
+    <>
+      <button
+        className="danger"
+        onClick={() => setConfirming(true)}
+        disabled={state.status === "finished"}
+        title="Завершить игру для всех"
+      >
+        ⏹ <span className="label">Завершить игру</span>
+      </button>
+      {confirming && (
+        <Modal title="Завершить игру?" onClose={() => setConfirming(false)}>
+          <div className="form">
+            <p>
+              {lobby
+                ? "Игра закроется, игроки больше не смогут в неё войти."
+                : "Игра остановится у всех игроков. Победителя не будет."}
+              {!lobby && " Если нажали по ошибке — «Отменить» вернёт игру."}
+            </p>
+            <div className="row">
+              <button
+                className="danger"
+                onClick={() => {
+                  action("finish_game");
+                  setConfirming(false);
+                }}
+              >
+                Завершить игру
+              </button>
+              <button className="secondary" onClick={() => setConfirming(false)}>
+                Продолжить игру
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </>
+  );
+}
+
+/** Ведущий переводит игрока в большой круг, когда пассивный доход превысил расходы. */
+export function FastTrackButton({ state, player }: { state: GameState; player: PlayerState }) {
+  const action = useGame((s) => s.action);
+  if (player.track !== "rat_race" || !player.statement.can_exit_rat_race) return null;
+  const midTurn =
+    player.id === state.current_player_id && !["roll", "end_turn"].includes(state.phase);
+  return (
+    <button
+      className="ok small-button"
+      disabled={midTurn || state.status === "finished"}
+      title={midTurn ? "Дождитесь конца хода игрока" : "Пассивный доход превысил расходы"}
+      onClick={(e) => {
+        e.stopPropagation();
+        action("go_fast_track", { player_id: player.id });
+      }}
+    >
+      Перевести в большой круг
+    </button>
   );
 }
 
@@ -122,7 +191,7 @@ function AdjustCash({ state, onClose }: { state: GameState; onClose: () => void 
   const action = useGame((s) => s.action);
   const [playerId, setPlayerId] = useState(state.current_player_id ?? state.players[0]?.id);
   const [sign, setSign] = useState<1 | -1>(1);
-  const [amount, setAmount] = useState(100);
+  const [amount, setAmount] = useState(1000);
   const [reason, setReason] = useState("");
 
   const submit = () => {
@@ -153,8 +222,8 @@ function AdjustCash({ state, onClose }: { state: GameState; onClose: () => void 
             </button>
           </div>
           <span className="money-input">
-            $
             <input type="number" min={1} value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
+            ₽
           </span>
         </div>
         <label>
@@ -162,7 +231,7 @@ function AdjustCash({ state, onClose }: { state: GameState; onClose: () => void 
           <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Например: штраф" />
         </label>
         <button disabled={!playerId || amount <= 0} onClick={submit}>
-          {sign === 1 ? "Начислить" : "Списать"} ${amount.toLocaleString("ru-RU")}
+          {sign === 1 ? "Начислить" : "Списать"} {money(amount)}
         </button>
       </div>
     </Modal>

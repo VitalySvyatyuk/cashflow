@@ -1,11 +1,12 @@
-"""Временные данные для разработки: профессии, карточки и клетки поля.
+"""Данные игры: профессии, карточки и клетки поля. Все суммы — в рублях.
 
-Карточки генерируются случайно, но с фиксированным seed — при каждом запуске
-получается один и тот же набор. Позже заменим на настоящие.
+Профессии — настоящие. Карточки и клетки пока генерируются случайно, но с фиксированным
+seed — при каждом запуске получается один и тот же набор. Позже заменим на настоящие.
 """
 
 import random
 
+from game.finance import rub
 from game.models import CardCategory, CellKind, Track
 
 CARD_COLORS = {
@@ -30,13 +31,14 @@ CELL_COLORS = {
 }
 
 
-def _liabilities(mortgage, school, car, cards, retail):
+def _liabilities(mortgage, education, car, card, small):
+    """Пассивы профессии: (сумма долга, платёж в месяц). Нулевые долги не создаём."""
     items = [
         ("Ипотека", mortgage),
-        ("Кредит на обучение", school),
-        ("Автокредит", car),
-        ("Кредитные карты", cards),
-        ("Потребительский кредит", retail),
+        ("Кредит на образование", education),
+        ("Кредит на машину", car),
+        ("Кредитная карточка", card),
+        ("Мелкие кредиты", small),
     ]
     return [
         {"title": title, "balance": balance, "payment": payment}
@@ -45,92 +47,76 @@ def _liabilities(mortgage, school, car, cards, retail):
     ]
 
 
+def _profession(name, emoji, salary, taxes, other, per_child, savings, *liabilities):
+    return {
+        "name": name,
+        "emoji": emoji,
+        "salary": salary,
+        "taxes": taxes,
+        "other_expenses": other,
+        "per_child_expense": per_child,
+        "savings": savings,
+        "liabilities": _liabilities(*liabilities),
+    }
+
+
+# Карточки профессий 01–12 в рублях (docs/Карточки_профессий_01-12_рубли.md).
+# Пассивы: ипотека, кредит на образование, на машину, кредитная карточка, мелкие кредиты.
+# fmt: off
 PROFESSIONS = [
-    {
-        "name": "Учитель",
-        "emoji": "👩‍🏫",
-        "salary": 3300,
-        "taxes": 630,
-        "other_expenses": 760,
-        "per_child_expense": 180,
-        "savings": 400,
-        "liabilities": _liabilities((50000, 500), (12000, 60), (5000, 100), (3000, 90), (1000, 50)),
-    },
-    {
-        "name": "Инженер",
-        "emoji": "👷",
-        "salary": 4900,
-        "taxes": 1050,
-        "other_expenses": 1090,
-        "per_child_expense": 250,
-        "savings": 400,
-        "liabilities": _liabilities(
-            (75000, 700), (12000, 60), (7000, 140), (4000, 120), (1000, 50)
-        ),
-    },
-    {
-        "name": "Врач",
-        "emoji": "👨‍⚕️",
-        "salary": 13200,
-        "taxes": 3420,
-        "other_expenses": 2880,
-        "per_child_expense": 640,
-        "savings": 400,
-        "liabilities": _liabilities(
-            (202000, 1900), (150000, 750), (19000, 380), (9000, 270), (1000, 50)
-        ),
-    },
-    {
-        "name": "Медсестра",
-        "emoji": "👩‍⚕️",
-        "salary": 3100,
-        "taxes": 600,
-        "other_expenses": 710,
-        "per_child_expense": 170,
-        "savings": 480,
-        "liabilities": _liabilities((47000, 400), (6000, 30), (5000, 100), (3000, 90), (1000, 50)),
-    },
-    {
-        "name": "Полицейский",
-        "emoji": "👮",
-        "salary": 3000,
-        "taxes": 580,
-        "other_expenses": 690,
-        "per_child_expense": 160,
-        "savings": 520,
-        "liabilities": _liabilities((46000, 400), (0, 0), (5000, 100), (2000, 60), (1000, 50)),
-    },
-    {
-        "name": "Секретарь",
-        "emoji": "🗂️",
-        "salary": 2500,
-        "taxes": 460,
-        "other_expenses": 570,
-        "per_child_expense": 140,
-        "savings": 710,
-        "liabilities": _liabilities((38000, 400), (0, 0), (4000, 80), (2000, 60), (1000, 50)),
-    },
-    {
-        "name": "Менеджер",
-        "emoji": "💼",
-        "salary": 4600,
-        "taxes": 910,
-        "other_expenses": 1000,
-        "per_child_expense": 240,
-        "savings": 400,
-        "liabilities": _liabilities((75000, 700), (12000, 60), (6000, 120), (4000, 90), (1000, 50)),
-    },
-    {
-        "name": "Пилот",
-        "emoji": "✈️",
-        "salary": 9500,
-        "taxes": 2350,
-        "other_expenses": 2210,
-        "per_child_expense": 480,
-        "savings": 400,
-        "liabilities": _liabilities((90000, 1000), (0, 0), (15000, 300), (22000, 660), (1000, 50)),
-    },
+    _profession(
+        "Секретарь", "🗂️", 25000, 4600, 5700, 1400, 15900,
+        (380000, 4000), (0, 0), (40000, 800), (20000, 600), (10000, 500),
+    ),
+    _profession(
+        "Менеджер", "💼", 46000, 9100, 10000, 2400, 20700,
+        (750000, 7000), (120000, 600), (60000, 1200), (30000, 900), (10000, 500),
+    ),
+    _profession(
+        "Водитель грузовика", "🚚", 25000, 4600, 5700, 1400, 16300,
+        (380000, 4000), (0, 0), (40000, 800), (20000, 600), (10000, 500),
+    ),
+    _profession(
+        "Пилот авиалиний", "✈️", 95000, 23500, 22100, 4800, 30000,
+        (1430000, 13300), (0, 0), (150000, 3000), (220000, 6600), (10000, 500),
+    ),
+    _profession(
+        "Автомеханик", "🔧", 20000, 3600, 4500, 1100, 13900,
+        (310000, 3000), (0, 0), (30000, 600), (20000, 600), (10000, 500),
+    ),
+    _profession(
+        "Адвокат", "⚖️", 75000, 18300, 16500, 3800, 24800,
+        (1150000, 11000), (780000, 3900), (110000, 2200), (60000, 1800), (10000, 500),
+    ),
+    _profession(
+        "Инженер", "👷", 49000, 10500, 10900, 2500, 20900,
+        (750000, 7000), (120000, 600), (70000, 1400), (40000, 1200), (10000, 500),
+    ),
+    _profession(
+        "Учитель", "👩‍🏫", 33000, 6300, 7600, 1800, 15100,
+        (500000, 5000), (120000, 600), (50000, 1000), (30000, 900), (10000, 500),
+    ),
+    _profession(
+        "Дворник", "🧹", 16000, 2800, 3000, 700, 12100,
+        (200000, 2000), (0, 0), (40000, 600), (20000, 600), (10000, 500),
+    ),
+    _profession(
+        "Медсестра", "👩‍⚕️", 31000, 6000, 7100, 1700, 16000,
+        (470000, 4000), (60000, 300), (50000, 1000), (30000, 900), (10000, 500),
+    ),
+    _profession(
+        "Врач", "👨‍⚕️", 132000, 34200, 28800, 6400, 39500,
+        (2020000, 19000), (1500000, 7500), (190000, 3800), (90000, 2700), (10000, 500),
+    ),
+    _profession(
+        "Офицер полиции", "👮", 30000, 5800, 6900, 1600, 16400,
+        (460000, 4000), (0, 0), (50000, 1000), (20000, 600), (10000, 500),
+    ),
 ]
+# fmt: on
+
+# Старые названия — чтобы make seed переименовал профессии, а не завёл дубли.
+RENAMED_PROFESSIONS = {"Полицейский": "Офицер полиции", "Пилот": "Пилот авиалиний"}
 
 STOCKS = ["ОКЗ", "МГС", "ВКУС", "ТЕХН", "ЗЛТ"]
 
@@ -172,23 +158,23 @@ def build_cards(seed=2026):
     cards = []
 
     for symbol in STOCKS:
-        price = rnd.choice([1, 5, 10, 20, 30, 40])
+        price = rnd.choice([10, 50, 100, 200, 300, 400])
         cards.append(
             {
                 "category": CardCategory.SMALL_DEAL,
-                "title": f"Акции {symbol} по ${price}",
-                "text": f"Можно купить любое количество акций {symbol} по ${price}.",
+                "title": f"Акции {symbol} по {rub(price)}",
+                "text": f"Можно купить любое количество акций {symbol} по {rub(price)}.",
                 "effect": {"type": "stock", "symbol": symbol, "price": price},
             }
         )
     for i in range(7):
         name = SMALL_PROPERTIES[i % len(SMALL_PROPERTIES)]
-        cost = _round(rnd.randint(30000, 90000), 1000)
-        down = _round(cost * rnd.choice([0.05, 0.1, 0.15]))
+        cost = _round(rnd.randint(300_000, 900_000), 10_000)
+        down = _round(cost * rnd.choice([0.05, 0.1, 0.15]), 1000)
         cards.append(
             {
                 "category": CardCategory.SMALL_DEAL,
-                "title": f"{name} за ${cost:,}".replace(",", " "),
+                "title": f"{name} за {rub(cost)}",
                 "text": rnd.choice(FLAVOR),
                 "effect": {
                     "type": "real_estate",
@@ -196,19 +182,19 @@ def build_cards(seed=2026):
                     "cost": cost,
                     "down_payment": down,
                     "mortgage": cost - down,
-                    "cashflow": _round(rnd.randint(50, 400), 10),
+                    "cashflow": _round(rnd.randint(500, 4000), 100),
                 },
             }
         )
 
     for i in range(8):
         name = BIG_PROPERTIES[i % len(BIG_PROPERTIES)]
-        cost = _round(rnd.randint(150000, 900000), 5000)
-        down = _round(cost * rnd.choice([0.1, 0.15, 0.2]), 1000)
+        cost = _round(rnd.randint(1_500_000, 9_000_000), 50_000)
+        down = _round(cost * rnd.choice([0.1, 0.15, 0.2]), 10_000)
         cards.append(
             {
                 "category": CardCategory.BIG_DEAL,
-                "title": f"{name} за ${cost:,}".replace(",", " "),
+                "title": f"{name} за {rub(cost)}",
                 "text": rnd.choice(FLAVOR),
                 "effect": {
                     "type": "real_estate",
@@ -216,39 +202,39 @@ def build_cards(seed=2026):
                     "cost": cost,
                     "down_payment": down,
                     "mortgage": cost - down,
-                    "cashflow": _round(rnd.randint(800, 6000), 100),
+                    "cashflow": _round(rnd.randint(8000, 60_000), 1000),
                 },
             }
         )
 
     for symbol in STOCKS[:4]:
-        price = rnd.choice([1, 40, 50, 60])
+        price = rnd.choice([10, 400, 500, 600])
         cards.append(
             {
                 "category": CardCategory.MARKET,
-                "title": f"Курс {symbol}: ${price}",
+                "title": f"Курс {symbol}: {rub(price)}",
                 "text": "Все владельцы акций могут продать их по этой цене.",
                 "effect": {"type": "stock_price", "symbol": symbol, "price": price},
             }
         )
     for name in SMALL_PROPERTIES[:4]:
-        price = _round(rnd.randint(40000, 140000), 5000)
+        price = _round(rnd.randint(400_000, 1_400_000), 50_000)
         cards.append(
             {
                 "category": CardCategory.MARKET,
                 "title": f"Покупатель на «{name}»",
-                "text": f"Предлагают ${price:,} за объект «{name}».".replace(",", " "),
+                "text": f"Предлагают {rub(price)} за объект «{name}».",
                 "effect": {"type": "sell_offer", "property": name, "price": price},
             }
         )
 
     for title in DOODADS:
-        amount = _round(rnd.randint(50, 3000), 50)
+        amount = _round(rnd.randint(500, 30_000), 500)
         cards.append(
             {
                 "category": CardCategory.DOODAD,
                 "title": title,
-                "text": f"Заплатите ${amount:,}.".replace(",", " "),
+                "text": f"Заплатите {rub(amount)}.",
                 "effect": {"type": "expense", "amount": amount},
             }
         )
@@ -292,7 +278,7 @@ RAT_RACE_TEXT = {
         "Благотворительность",
         "Отдайте 10% дохода и бросайте два кубика следующие 3 хода.",
     ),
-    CellKind.PAYCHECK: ("Зарплата", "Получите денежный поток."),
+    CellKind.PAYCHECK: ("Доход", "Получите месячный денежный поток."),
     CellKind.MARKET: ("Рынок", "Вытяните карточку рынка — возможно, кто-то купит ваш актив."),
     CellKind.BABY: ("Ребёнок", "У вас родился ребёнок: расходы растут."),
     CellKind.DOWNSIZED: ("Увольнение", "Заплатите сумму расходов и пропустите 2 хода."),
@@ -370,15 +356,15 @@ def build_cells(seed=2026):
     for position in range(40):
         kind = FAST_TRACK_BLOCK[position % len(FAST_TRACK_BLOCK)]
         if kind == CellKind.BUSINESS:
-            cost = _round(rnd.randint(50000, 500000), 10000)
-            flow = _round(cost * rnd.uniform(0.03, 0.08), 500)
+            cost = _round(rnd.randint(500_000, 5_000_000), 100_000)
+            flow = _round(cost * rnd.uniform(0.03, 0.08), 5000)
             title = next(businesses)
-            description = f"Купите бизнес за ${cost:,} — +${flow:,} в месяц.".replace(",", " ")
+            description = f"Купите бизнес за {rub(cost)} — +{rub(flow)} в месяц."
             effect = {"cost": cost, "cashflow": flow}
         elif kind == CellKind.DREAM:
-            cost = _round(rnd.randint(100000, 1000000), 50000)
+            cost = _round(rnd.randint(1_000_000, 10_000_000), 500_000)
             title = next(dreams)
-            description = f"Мечта стоит ${cost:,}. Купите её и выиграйте.".replace(",", " ")
+            description = f"Мечта стоит {rub(cost)}. Купите её и выиграйте."
             effect = {"cost": cost}
         elif kind == CellKind.LOSS:
             title = next(losses)
@@ -386,8 +372,8 @@ def build_cells(seed=2026):
             effect = {"cash_share": 0.5}
         elif kind == CellKind.CHARITY:
             title = "Благотворительность"
-            description = "Пожертвуйте $100 000 и бросайте 1–3 кубика 3 хода."
-            effect = {"cost": 100000}
+            description = f"Пожертвуйте {rub(1_000_000)} и бросайте 1–3 кубика 3 хода."
+            effect = {"cost": 1_000_000}
         else:
             title = "День денежного потока"
             description = "Получите месячный денежный поток бизнесов."

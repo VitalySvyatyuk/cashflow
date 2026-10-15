@@ -200,10 +200,10 @@ def _with_comment(text, comment):
 
 
 def _check_status(game, actor, action):
-    if game.status == Game.Status.LOBBY:
+    if game.status == Game.Status.LOBBY and action.run is not _run_finish:
         raise GameError("Игра ещё не началась.")
     if game.status == Game.Status.FINISHED and not (actor.is_host and action.run is _run_undo):
-        raise GameError("Игра завершена.")
+        raise GameError("Игра уже завершена.")
     if action.policy == HOST and not actor.is_host:
         raise GameError("Это может сделать только ведущий.")
     if game.status == Game.Status.PAUSED and not actor.is_host:
@@ -254,8 +254,7 @@ def parse_int(value, name, minimum=None):
     return number
 
 
-def _money(n):
-    return f"${n:,}".replace(",", " ")
+_money = finance.rub
 
 
 # --- Поле и ходы -----------------------------------------------------------------------
@@ -355,7 +354,7 @@ def _payday(game, player):
         "payday",
         player=player,
         amount=amount,
-        text=f"{player.name}: зарплата {_money(amount)}",
+        text=f"{player.name}: доход {_money(amount)}",
     )
 
 
@@ -455,7 +454,13 @@ def _draw(ctx, category):
                     text=f"{ctx.player.name} тянет карточку «{card.title}»",
                 )
                 return card
-        # Колода кончилась — перемешиваем заново.
+        # Колода кончилась — перемешиваем заново. Если её карточки удалили из админки
+        # (например, make seed-reset), собираем колоду из тех, что есть сейчас.
+        if not existing:
+            deck.card_ids = list(
+                Card.objects.filter(category=category, is_active=True).values_list("id", flat=True)
+            )
+            existing = set(deck.card_ids)
         ctx.rnd.shuffle(deck.card_ids)
         deck.next_index = 0
     raise GameError("Колода пуста.")
@@ -570,6 +575,7 @@ def _run_buy(ctx):
             kind=Asset.Kind.STOCK,
             title=f"Акции {effect['symbol']}",
             key=effect["symbol"],
+            description=card.text,
             quantity=ctx.params["quantity"],
             cost=effect["price"],
             source_card=card,
@@ -580,6 +586,7 @@ def _run_buy(ctx):
             kind=Asset.Kind.REAL_ESTATE,
             title=effect.get("property", card.title),
             key=effect.get("property", ""),
+            description=card.text,
             cost=effect.get("cost", 0),
             cashflow=effect.get("cashflow", 0),
             source_card=card,
@@ -703,7 +710,12 @@ def _run_buy_business(ctx):
     cost, flow = cell.effect.get("cost", 0), cell.effect.get("cashflow", 0)
     pay(player, cost, cell.title)
     Asset.objects.create(
-        player=player, kind=Asset.Kind.BUSINESS, title=cell.title, cost=cost, cashflow=flow
+        player=player,
+        kind=Asset.Kind.BUSINESS,
+        title=cell.title,
+        description=cell.description,
+        cost=cost,
+        cashflow=flow,
     )
     player.fast_track_income += flow
     player.save(update_fields=["fast_track_income"])
@@ -803,10 +815,13 @@ def _run_repay(ctx):
 
 
 def _check_fast_track(ctx):
-    if ctx.player.track != Track.RAT_RACE:
-        raise GameError("Вы уже на скоростной дорожке.")
-    if not statement(ctx.player).can_exit_rat_race:
-        raise GameError("Пассивный доход ещё не превышает расходы.")
+    player, game = ctx.player, ctx.game
+    if player.track != Track.RAT_RACE:
+        raise GameError(f"{player.name} уже в большом круге.")
+    if not statement(player).can_exit_rat_race:
+        raise GameError(f"{player.name}: пассивный доход ещё не превышает расходы.")
+    if player == game.current_player and game.phase not in (Game.Phase.ROLL, Game.Phase.END_TURN):
+        raise GameError(f"Дождитесь, пока {player.name} закончит ход.")
 
 
 def _run_fast_track(ctx):
@@ -820,7 +835,7 @@ def _run_fast_track(ctx):
         ctx.game,
         "fast_track",
         player=player,
-        text=f"{player.name} выходит из крысиных бегов! "
+        text=f"{player.name} переходит в большой круг! "
         f"Доход дня денежного потока: {_money(player.fast_track_income)}",
     )
 
@@ -869,6 +884,17 @@ def _run_adjust_cash(ctx):
             f"Ведущий: {player.name} {sign}{_money(abs(amount))}", ctx.params["reason"]
         ),
     )
+
+
+def _run_finish(ctx):
+    game = ctx.game
+    game.pending_actions.filter(status=PendingAction.Status.PENDING).update(
+        status=PendingAction.Status.CANCELLED, decided_at=timezone.now()
+    )
+    game.status = Game.Status.FINISHED
+    game.finished_at = timezone.now()
+    game.save(update_fields=["status", "finished_at"])
+    log_event(game, "game_finished", text="Ведущий завершил игру")
 
 
 def _run_undo(ctx):
@@ -951,14 +977,6 @@ ACTIONS = {
         current_only=False,
         phase_bound=False,
     ),
-    "go_fast_track": Action(
-        "Выход на скоростную дорожку",
-        APPROVE,
-        _run_fast_track,
-        _check_fast_track,
-        describe=lambda ctx: "выйти на скоростную дорожку",
-        phases=(P.END_TURN,),
-    ),
     "end_turn": Action("Конец хода", AUTO, _run_end_turn, phases=(P.END_TURN,), phase_bound=False),
     # Только ведущий
     "pause": Action("Пауза", HOST, _run_pause, undoable=False, phase_bound=False),
@@ -967,5 +985,12 @@ ACTIONS = {
         "Корректировка денег", HOST, _run_adjust_cash, parse=_parse_adjust, phase_bound=False
     ),
     "next_turn": Action("Передача хода", HOST, _run_end_turn, phase_bound=False),
+    # Игрок говорит ведущему «Я хочу выйти в большой круг», программа проверяет условие,
+    # а переводит ведущий. Автоматического перехода нет.
+    "go_fast_track": Action(
+        "Перевод в большой круг", HOST, _run_fast_track, _check_fast_track, phase_bound=False
+    ),
+    # Отмена возвращает завершённую игру, если ведущий нажал по ошибке.
+    "finish_game": Action("Завершение игры", HOST, _run_finish, phase_bound=False),
     "undo": Action("Отмена", HOST, _run_undo, undoable=False, phase_bound=False),
 }

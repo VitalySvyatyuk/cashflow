@@ -3,7 +3,7 @@ import pytest
 from game import engine, lobby
 from game.engine import HOST_ACTOR, Actor, decide, submit_action
 from game.errors import GameError
-from game.finance import BANK_LOAN_TITLE, statement
+from game.finance import BANK_LOAN_STEP, BANK_LOAN_TITLE, statement
 from game.models import (
     Asset,
     BoardCell,
@@ -88,7 +88,7 @@ def stock_card(price=10):
     return Card.objects.create(
         category=CardCategory.SMALL_DEAL,
         color="#000000",
-        title=f"Акции ТСТ по ${price}",
+        title=f"Акции ТСТ по {price} ₽",
         effect={"type": "stock", "symbol": "ТСТ", "price": price},
     )
 
@@ -164,7 +164,7 @@ def test_doodad_takes_auto_loan_when_broke(started, masha):
     act(started, masha, "roll", rnd=Dice(1))
     amount = fresh(started).current_card.effect["amount"]
     loan = masha.liabilities.get(title=BANK_LOAN_TITLE)
-    assert loan.balance % 1000 == 0 and loan.balance >= amount
+    assert loan.balance % BANK_LOAN_STEP == 0 and loan.balance >= amount
     assert loan.payment == loan.balance // 10
     assert fresh(masha).cash == loan.balance - amount
     assert started.events.filter(kind="auto_loan").exists()
@@ -213,7 +213,7 @@ def test_buy_needs_host_approval(started, masha):
     pending = act(started, masha, "buy", quantity=20)
 
     assert pending.status == PendingAction.Status.PENDING
-    assert pending.description == "купить 20 акц. ТСТ за $200"
+    assert pending.description == "купить 20 акц. ТСТ за 200\xa0₽"
     assert fresh(masha).cash == cash  # ничего не изменилось до решения
 
     approve(started, pending)
@@ -282,7 +282,7 @@ def test_pass_cancels_pending_buy(started, masha):
 
 
 def test_approval_fails_if_turn_moved_on(started, masha):
-    pending = act(started, masha, "take_loan", amount=1000)  # не привязана к фазе
+    pending = act(started, masha, "take_loan", amount=10_000)  # не привязана к фазе
     open_card(started, stock_card())
     buy = act(started, masha, "buy", quantity=1)
     host(started, "next_turn")
@@ -377,14 +377,14 @@ def test_default_dice_count_by_track(started, masha):
 def test_loans(started, masha):
     cash = masha.cash
     with pytest.raises(GameError, match="кратными"):
-        act(started, masha, "take_loan", amount=1500)
-    approve(started, act(started, masha, "take_loan", amount=5000))
+        act(started, masha, "take_loan", amount=15_000)
+    approve(started, act(started, masha, "take_loan", amount=50_000))
     loan = masha.liabilities.get(title=BANK_LOAN_TITLE)
-    assert (loan.balance, loan.payment, fresh(masha).cash) == (5000, 500, cash + 5000)
+    assert (loan.balance, loan.payment, fresh(masha).cash) == (50_000, 5000, cash + 50_000)
 
-    approve(started, act(started, masha, "repay_loan", liability_id=loan.id, amount=2000))
-    assert (fresh(loan).balance, loan.payment) == (3000, 300)
-    approve(started, act(started, masha, "repay_loan", liability_id=loan.id, amount=3000))
+    approve(started, act(started, masha, "repay_loan", liability_id=loan.id, amount=20_000))
+    assert (fresh(loan).balance, loan.payment) == (30_000, 3000)
+    approve(started, act(started, masha, "repay_loan", liability_id=loan.id, amount=30_000))
     assert not masha.liabilities.filter(title=BANK_LOAN_TITLE).exists()
 
 
@@ -399,7 +399,7 @@ def test_profession_debt_repaid_only_in_full(started, masha):
 
 
 def test_other_player_can_take_loan_any_time(started, petya):
-    assert act(started, petya, "take_loan", amount=1000).status == PendingAction.Status.PENDING
+    assert act(started, petya, "take_loan", amount=10_000).status == PendingAction.Status.PENDING
 
 
 # --- Ведущий ---------------------------------------------------------------------------
@@ -446,7 +446,7 @@ def test_undo_restores_previous_state(started, masha):
 def test_undo_restores_liabilities_and_turn(started, masha, petya):
     place(masha, cell_position(CellKind.PAYCHECK) - 1)
     act(started, masha, "roll", rnd=Dice(1))
-    approve(started, act(started, masha, "take_loan", amount=2000))
+    approve(started, act(started, masha, "take_loan", amount=20_000))
     act(started, masha, "end_turn")
     assert fresh(started).current_player == petya
 
@@ -480,18 +480,39 @@ def make_rich(player):
     )
 
 
-def test_fast_track_requires_passive_income(started, masha):
+def test_host_moves_player_to_fast_track(started, masha):
     started.phase = Game.Phase.END_TURN
     started.save()
-    with pytest.raises(GameError, match="Пассивный"):
-        act(started, masha, "go_fast_track")
+    with pytest.raises(GameError, match="пассивный доход"):
+        host(started, "go_fast_track", player_id=masha.id)
 
     make_rich(masha)
     passive = statement(masha).passive_income
-    approve(started, act(started, masha, "go_fast_track"))
+    host(started, "go_fast_track", player_id=masha.id)
     masha.refresh_from_db()
     assert masha.track == Track.FAST_TRACK
     assert masha.fast_track_income == passive * 100
+    with pytest.raises(GameError, match="уже в большом круге"):
+        host(started, "go_fast_track", player_id=masha.id)
+
+
+def test_player_cannot_move_to_fast_track_alone(started, masha):
+    """Игрок только говорит ведущему — перевод делает ведущий."""
+    make_rich(masha)
+    started.phase = Game.Phase.END_TURN
+    started.save()
+    with pytest.raises(GameError, match="только ведущий"):
+        act(started, masha, "go_fast_track")
+
+
+def test_fast_track_waits_for_turn_end(started, masha, petya):
+    make_rich(masha)
+    make_rich(petya)
+    open_card(started, stock_card())
+    with pytest.raises(GameError, match="закончит ход"):
+        host(started, "go_fast_track", player_id=masha.id)
+    host(started, "go_fast_track", player_id=petya.id)  # не его ход — можно сразу
+    assert fresh(petya).track == Track.FAST_TRACK
 
 
 def test_fast_track_dream_wins_and_undo_reopens(started, masha):
@@ -571,4 +592,70 @@ def test_player_from_other_game_rejected(started, host):
     other = lobby.create_game(host, 2)
     stranger = lobby.join_game(other, "Чужой")
     with pytest.raises(GameError, match="нет в этой игре"):
-        act(started, stranger, "take_loan", amount=1000)
+        act(started, stranger, "take_loan", amount=10_000)
+
+
+# --- Завершение игры -------------------------------------------------------------------
+
+
+def test_host_finishes_game(started, masha):
+    pending = act(started, masha, "take_loan", amount=10_000)
+    host(started, "finish_game")
+    started.refresh_from_db()
+    assert started.status == Game.Status.FINISHED
+    assert started.finished_at is not None
+    assert started.winner is None
+    assert fresh(pending).status == PendingAction.Status.CANCELLED
+    assert started.events.filter(kind="game_finished").exists()
+    with pytest.raises(GameError, match="завершена"):
+        act(started, masha, "roll")
+    with pytest.raises(GameError, match="завершена"):
+        host(started, "finish_game")
+
+
+def test_finish_game_is_host_only(started, masha):
+    with pytest.raises(GameError, match="только ведущий"):
+        act(started, masha, "finish_game")
+
+
+def test_finish_game_can_be_undone(started, masha):
+    host(started, "pause")
+    host(started, "finish_game")
+    host(started, "undo")
+    started.refresh_from_db()
+    assert started.status == Game.Status.PAUSED
+    assert started.finished_at is None
+
+
+def test_finish_game_in_lobby(game, seeded):
+    lobby.join_game(game, "Маша")
+    host(game, "finish_game")
+    assert fresh(game).status == Game.Status.FINISHED
+    with pytest.raises(GameError, match="уже началась"):
+        lobby.join_game(fresh(game), "Петя")
+
+
+# --- Активы и колоды -------------------------------------------------------------------
+
+
+def test_bought_asset_keeps_card_description(started, masha):
+    card = stock_card(price=10)
+    card.text = "Компания растёт."
+    card.save()
+    open_card(started, card)
+    host(started, "buy", quantity=2)
+    assert masha.assets.get().description == "Компания растёт."
+
+
+def test_deck_rebuilt_after_cards_replaced(started, masha):
+    """После make seed-reset старые id в колоде пропадают — колода собирается заново."""
+    Card.objects.filter(category=CardCategory.DOODAD).delete()
+    new = Card.objects.create(
+        category=CardCategory.DOODAD,
+        color="#000000",
+        title="Новая трата",
+        effect={"type": "expense", "amount": 500},
+    )
+    place(masha, cell_position(CellKind.DOODAD) - 1)
+    act(started, masha, "roll", rnd=Dice(1))
+    assert fresh(started).current_card == new

@@ -10,13 +10,15 @@ import { useGameSounds } from "../lib/useGameSounds";
 import { ConnectionBadge } from "../components/ConnectionBadge";
 import { EventLog } from "../components/EventLog";
 import { FinanceSheet } from "../components/finance/FinanceSheet";
+import { GameOverBanner, closedInLobby } from "../components/GameOver";
 import { FinanceSummary } from "../components/finance/FinanceSummary";
 import { Modal } from "../components/Modal";
 import { PauseOverlay } from "../components/PauseOverlay";
 import { PlayerActions } from "../components/PlayerActions";
 import { PlayerList } from "../components/PlayerList";
+import { ProfessionIcon } from "../components/ProfessionIcon";
 import { Toast } from "../components/Toast";
-import { forgetPlayer, loadPlayer } from "../lib/storage";
+import { forgetPlayer, isWelcomed, loadPlayer, markWelcomed } from "../lib/storage";
 import { useCurrentPlayer, useGame, useMe } from "../store/game";
 
 const CLOSE_MESSAGES: Record<number, string> = {
@@ -36,6 +38,7 @@ export function PlayerPage() {
   const me = useMe();
   const current = useCurrentPlayer();
   const [viewing, setViewing] = useState<number | null>(null);
+  const [welcomeClosed, setWelcomeClosed] = useState(false);
   const viewingPlayer = useGame((s) => s.view?.players.find((p) => p.id === viewing) ?? null);
   const role = useGame((s) => s.role);
   const playerId = useGame((s) => s.playerId);
@@ -64,6 +67,18 @@ export function PlayerPage() {
   }
   if (!state || !me) return <main className="center-page">Подключение…</main>;
 
+  if (closedInLobby(state)) {
+    return (
+      <main className="center-page">
+        <div className="panel">
+          <h1>Игра {state.code}</h1>
+          <p>Ведущий завершил игру.</p>
+          <Link to="/">Ко входу</Link>
+        </div>
+      </main>
+    );
+  }
+
   if (state.status === "lobby") {
     return (
       <main className="center-page">
@@ -79,6 +94,12 @@ export function PlayerPage() {
 
   const view = settled ?? state;
   const paused = state.status === "paused";
+  const showWelcome =
+    !welcomeClosed && state.status !== "finished" && !!me.profession && !isWelcomed(saved.token);
+  const closeWelcome = () => {
+    markWelcomed(saved.token);
+    setWelcomeClosed(true);
+  };
   return (
     <div className={`game-layout ${paused ? "is-paused" : ""}`}>
       <header>
@@ -102,11 +123,7 @@ export function PlayerPage() {
             <Dice values={state.dice} />
           )}
         </Board>
-        {view.status === "finished" && (
-          <div className="winner">
-            🏆 Победитель: {view.players.find((p) => p.id === view.winner_id)?.name}
-          </div>
-        )}
+        <GameOverBanner state={view} />
       </main>
       <aside className="right">
         <PlayerList state={view} meId={me.id} onSelect={setViewing} />
@@ -121,6 +138,17 @@ export function PlayerPage() {
           onClose={() => setViewing(null)}
         >
           <FinanceSheet player={viewingPlayer} readOnly={viewingPlayer.id !== me.id} />
+        </Modal>
+      )}
+      {showWelcome && me.profession && (
+        <Modal title="Добро пожаловать в игру!" onClose={closeWelcome}>
+          <div className="welcome">
+            <ProfessionIcon profession={me.profession} size={64} />
+            <p>
+              Сегодня ваша профессия: <b>{me.profession.name}</b>
+            </p>
+            <button onClick={closeWelcome}>Начать</button>
+          </div>
         </Modal>
       )}
       {paused && <PauseOverlay />}

@@ -5,9 +5,15 @@ from dataclasses import asdict, dataclass
 from game.models import Liability
 
 BANK_LOAN_TITLE = "Банковский кредит"
-BANK_LOAN_STEP = 1000
+BANK_LOAN_STEP = 10_000
 BANK_LOAN_RATE = 0.1  # платёж в месяц от суммы кредита
 MAX_CHILDREN = 3
+
+
+def rub(n):
+    """Сумма в рублях: «25 000 ₽», «−500 ₽». Игровая валюта — всегда рубль."""
+    sign = "−" if n < 0 else ""
+    return f"{sign}{abs(n):,}\u00a0₽".replace(",", "\u00a0")
 
 
 @dataclass

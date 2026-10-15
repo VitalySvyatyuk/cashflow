@@ -6,7 +6,7 @@ import { Modal } from "../Modal";
 import { ProfessionIcon } from "../ProfessionIcon";
 import { FinanceSheet, assetLabel } from "./FinanceSheet";
 
-/** Левая панель игрока: главное о деньгах и путь к выходу из крысиных бегов. */
+/** Левая панель игрока: главное о деньгах и путь к выходу в большой круг. */
 export function FinanceSummary({ player }: { player: PlayerState }) {
   const [open, setOpen] = useState(false);
   const s = player.statement;
@@ -34,15 +34,21 @@ export function FinanceSummary({ player }: { player: PlayerState }) {
       {player.track === "rat_race" ? (
         <div className="exit-progress" title="Пассивный доход должен превысить расходы">
           <div className="muted small">
-            Выход из крысиных бегов: {money(s.passive_income)} из {money(s.total_expenses)}
+            Выход в большой круг: пассивный доход {money(s.passive_income)} из{" "}
+            {money(s.total_expenses)}
           </div>
           <div className="bar">
             <div style={{ width: `${progress * 100}%` }} />
           </div>
+          {s.can_exit_rat_race && (
+            <p className="exit-ready">
+              Условие выполнено! Скажите ведущему: «Я хочу выйти в большой круг».
+            </p>
+          )}
         </div>
       ) : (
         <div className="muted small">
-          Скоростная дорожка: {money(player.fast_track_income)} в День денежного потока
+          Большой круг: {money(player.fast_track_income)} в День денежного потока
         </div>
       )}
 

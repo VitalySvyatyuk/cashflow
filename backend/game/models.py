@@ -90,7 +90,7 @@ class CellKind(models.TextChoices):
     OPPORTUNITY = "opportunity", "Возможность"
     MARKET = "market", "Рынок"
     DOODAD = "doodad", "Траты"
-    PAYCHECK = "paycheck", "Зарплата"
+    PAYCHECK = "paycheck", "Доход"
     CHARITY = "charity", "Благотворительность"
     BABY = "baby", "Ребёнок"
     DOWNSIZED = "downsized", "Увольнение"
@@ -287,6 +287,7 @@ class Asset(models.Model):
     title = models.CharField("название", max_length=200)
     # Тикер акции или тип объекта («Дом 3/2») — по нему карточки рынка находят активы.
     key = models.CharField("ключ", max_length=100, blank=True, db_index=True)
+    description = models.TextField("описание", blank=True)
     quantity = models.PositiveIntegerField("количество", default=1)
     cost = models.PositiveIntegerField("стоимость", default=0)
     cashflow = models.IntegerField("денежный поток в месяц", default=0)

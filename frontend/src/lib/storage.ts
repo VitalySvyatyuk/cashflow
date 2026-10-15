@@ -37,3 +37,25 @@ export function forgetPlayer(code: string) {
     // ничего страшного
   }
 }
+
+// Приветствие с профессией показываем один раз за игру (ключ — токен игрока).
+const welcomeKey = (token: string) => `cashflow.welcomed.${token}`;
+const welcomedInMemory = new Set<string>();
+
+export function isWelcomed(token: string): boolean {
+  if (welcomedInMemory.has(token)) return true;
+  try {
+    return localStorage.getItem(welcomeKey(token)) !== null;
+  } catch {
+    return false;
+  }
+}
+
+export function markWelcomed(token: string) {
+  welcomedInMemory.add(token);
+  try {
+    localStorage.setItem(welcomeKey(token), "1");
+  } catch {
+    // запомнили в памяти
+  }
+}

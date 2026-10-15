@@ -2,7 +2,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from game.models import BoardCell, Card, Profession
-from game.seed_data import PROFESSIONS, build_cards, build_cells
+from game.seed_data import PROFESSIONS, RENAMED_PROFESSIONS, build_cards, build_cells
 
 
 class Command(BaseCommand):
@@ -20,6 +20,9 @@ class Command(BaseCommand):
         if options["reset"]:
             Card.objects.all().delete()
             BoardCell.objects.all().delete()
+        for old, new in RENAMED_PROFESSIONS.items():
+            if not Profession.objects.filter(name=new).exists():
+                Profession.objects.filter(name=old).update(name=new)
         for data in PROFESSIONS:
             Profession.objects.update_or_create(name=data["name"], defaults=data)
         for data in build_cards():

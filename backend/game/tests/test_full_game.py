@@ -11,7 +11,7 @@ import pytest
 from game import lobby
 from game.engine import HOST_ACTOR, Actor, decide, submit_action
 from game.errors import GameError
-from game.finance import BANK_LOAN_TITLE, statement
+from game.finance import BANK_LOAN_STEP, BANK_LOAN_TITLE, statement
 from game.models import Asset, BoardCell, Game, PendingAction, Track
 from game.state import build_state
 
@@ -31,13 +31,14 @@ class Bot:
 
     # --- выполнение действий ---------------------------------------------------------
 
-    def act(self, player, kind, **params):
+    def act(self, player, kind, by_host=False, **params):
         """Игрок делает действие; если нужна санкция — ведущий одобряет."""
         self.actions += 1
         check_undo = self.actions % UNDO_EVERY == 0
         before = fingerprint(self.game) if check_undo else None
+        actor = HOST_ACTOR if by_host else Actor(player)
 
-        pending = submit_action(self.game, Actor(player), kind, params, rnd=self.rnd)
+        pending = submit_action(self.game, actor, kind, params, rnd=self.rnd)
         if pending is not None:
             decide(self.game, pending.id, True, rnd=self.rnd)
 
@@ -47,7 +48,7 @@ class Bot:
             after = fingerprint(self.game)
             assert after == before, f"undo после {kind} не вернул состояние"
             self.undo_checks += 1
-            pending = submit_action(self.game, Actor(player), kind, params, rnd=self.rnd)
+            pending = submit_action(self.game, actor, kind, params, rnd=self.rnd)
             if pending is not None:
                 decide(self.game, pending.id, True, rnd=self.rnd)
 
@@ -75,7 +76,7 @@ class Bot:
             player.refresh_from_db()
             phase = game.phase
             if phase == Game.Phase.CHOOSE_DEAL:
-                size = "big" if player.cash > 30000 else "small"
+                size = "big" if player.cash > 300_000 else "small"
                 self.act(player, "choose_deal", size=size)
             elif phase == Game.Phase.CARD:
                 self.handle_card(player)
@@ -102,14 +103,14 @@ class Bot:
                 self.try_act(owner, "sell", asset_id=asset.id, quantity=asset.quantity)
         if (
             effect.get("type") == "stock"
-            and effect["price"] <= 10
+            and effect["price"] <= 100
             and player.cash >= effect["price"]
         ):
             self.act(player, "buy", quantity=min(player.cash // effect["price"], 500))
         elif effect.get("type") == "real_estate" and effect["cashflow"] > 0:
             # Берём кредит на взнос, если сделка окупает проценты.
             short = effect["down_payment"] - player.cash
-            loan = -(-short // 1000) * 1000 if short > 0 else 0
+            loan = -(-short // BANK_LOAN_STEP) * BANK_LOAN_STEP if short > 0 else 0
             if loan == 0 or effect["cashflow"] > loan // 10:
                 if loan:
                     self.act(player, "take_loan", amount=loan)
@@ -120,11 +121,12 @@ class Bot:
 
     def finish_turn(self, player):
         if player.track == Track.RAT_RACE and statement(player).can_exit_rat_race:
-            self.act(player, "go_fast_track")
+            # Игрок говорит ведущему, переводит ведущий.
+            self.act(player, "go_fast_track", by_host=True, player_id=player.id)
         player.refresh_from_db()
         loan = player.liabilities.filter(title=BANK_LOAN_TITLE).first()
-        if loan and player.cash > 5000:
-            amount = min(loan.balance, (player.cash - 5000) // 1000 * 1000)
+        if loan and player.cash > 50_000:
+            amount = min(loan.balance, (player.cash - 50_000) // BANK_LOAN_STEP * BANK_LOAN_STEP)
             if amount:
                 self.act(player, "repay_loan", liability_id=loan.id, amount=amount)
         self.act(player, "end_turn")

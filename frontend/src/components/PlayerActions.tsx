@@ -108,9 +108,6 @@ export function PlayerActions({
         buttons.push(button("Отказаться", "pass"));
         break;
       case "end_turn":
-        if (me.track === "rat_race" && me.statement.can_exit_rat_race) {
-          buttons.push(button("Выйти на скоростную дорожку", "go_fast_track"));
-        }
         buttons.push(button("Завершить ход", "end_turn"));
         break;
     }

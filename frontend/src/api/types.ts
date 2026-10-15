@@ -36,6 +36,7 @@ export interface Asset {
   id: number;
   kind: "stock" | "real_estate" | "business" | "other";
   title: string;
+  description: string;
   key: string;
   quantity: number;
   cost: number;

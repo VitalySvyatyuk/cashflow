@@ -171,7 +171,7 @@ const KIND_NAMES: Record<string, string> = {
   opportunity: "Возможность",
   market: "Рынок",
   doodad: "Траты",
-  paycheck: "Зарплата",
+  paycheck: "Доход",
   charity: "Благотворительность",
   baby: "Ребёнок",
   downsized: "Увольнение",

@@ -870,3 +870,19 @@ ul.plain {
   object-fit: contain;
   line-height: 1;
 }
+
+.exit-ready {
+  margin: 6px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  font-size: 18px;
+}

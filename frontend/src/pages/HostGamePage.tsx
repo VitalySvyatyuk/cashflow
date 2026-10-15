@@ -14,7 +14,8 @@ import { ConnectionBadge } from "../components/ConnectionBadge";
 import { EventLog } from "../components/EventLog";
 import { PlayerActions } from "../components/PlayerActions";
 import { ProfessionIcon } from "../components/ProfessionIcon";
-import { ApprovalQueue, HostControls } from "../components/HostPanel";
+import { GameOverBanner, closedInLobby } from "../components/GameOver";
+import { ApprovalQueue, FastTrackButton, FinishGameButton, HostControls } from "../components/HostPanel";
 import { Toast } from "../components/Toast";
 import { money } from "../lib/format";
 import { useCurrentPlayer, useGame } from "../store/game";
@@ -46,6 +47,15 @@ export function HostGamePage() {
     );
   }
   if (!state) return <main className="center-page">Подключение…</main>;
+  if (closedInLobby(state)) {
+    return (
+      <main className="center-page">
+        <div className="panel">
+          Игра {state.code} завершена. <Link to="/host">К списку игр</Link>
+        </div>
+      </main>
+    );
+  }
   return state.status === "lobby" ? <HostLobby state={state} /> : <HostGame state={state} />;
 }
 
@@ -80,6 +90,7 @@ function HostLobby({ state }: { state: GameState }) {
         <button disabled={!state.players.length} onClick={() => run(api.start(state.code))}>
           Начать игру
         </button>
+        <FinishGameButton state={state} />
         <ConnectionBadge />
       </div>
       <Toast />
@@ -138,6 +149,7 @@ function HostGame({ state }: { state: GameState }) {
                   <div className="muted small">
                     <ProfessionIcon profession={p.profession} size={14} /> {p.profession?.name}
                   </div>
+                  <FastTrackButton state={view} player={p} />
                 </td>
                 <td>{money(p.cash)}</td>
                 <td className={p.statement.cashflow < 0 ? "negative" : ""}>{money(p.statement.cashflow)}</td>
@@ -155,11 +167,7 @@ function HostGame({ state }: { state: GameState }) {
             <Dice values={state.dice} />
           )}
         </Board>
-        {view.status === "finished" && (
-          <div className="winner">
-            🏆 Победитель: {view.players.find((p) => p.id === view.winner_id)?.name}
-          </div>
-        )}
+        <GameOverBanner state={view} />
       </main>
       <aside className="right">
         <h2>Заявки</h2>

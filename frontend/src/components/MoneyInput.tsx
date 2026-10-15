@@ -1,9 +1,11 @@
 import { useState } from "react";
 
-/** Сумма кратная шагу (кредиты — по $1000) и кнопка действия. */
+import { LOAN_STEP } from "../lib/format";
+
+/** Сумма в рублях, кратная шагу (кредиты — по 10 000 ₽), и кнопка действия. */
 export function MoneyInput({
   label,
-  step = 1000,
+  step = LOAN_STEP,
   max,
   onSubmit,
 }: {
@@ -16,7 +18,6 @@ export function MoneyInput({
   const valid = amount > 0 && amount % step === 0 && (max === undefined || amount <= max);
   return (
     <span className="money-input">
-      $
       <input
         type="number"
         min={step}
@@ -25,6 +26,7 @@ export function MoneyInput({
         value={amount}
         onChange={(e) => setAmount(Number(e.target.value))}
       />
+      ₽
       <button disabled={!valid} onClick={() => onSubmit(amount)}>
         {label}
       </button>
