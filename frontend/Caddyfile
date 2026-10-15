@@ -1,5 +1,6 @@
 # Сервер игры: HTTPS-сертификат Caddy получает и продлевает сам.
-{$SITE_DOMAIN} {
+# EXTRA_DOMAINS — другие адреса того же сайта через запятую (можно пусто).
+{$SITE_DOMAIN} {$EXTRA_DOMAINS} {
 	encode zstd gzip
 
 	# API, WebSocket и админка — в Django
