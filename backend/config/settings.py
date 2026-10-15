@@ -7,6 +7,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env(
     DJANGO_DEBUG=(bool, False),
     DJANGO_ALLOWED_HOSTS=(list, []),
+    DJANGO_CSRF_TRUSTED_ORIGINS=(list, []),
 )
 # .env лежит в корне репозитория; в контейнере переменные приходят из окружения.
 environ.Env.read_env(BASE_DIR.parent / ".env")
@@ -14,6 +15,16 @@ environ.Env.read_env(BASE_DIR.parent / ".env")
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 DEBUG = env("DJANGO_DEBUG")
 ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS")
+CSRF_TRUSTED_ORIGINS = env("DJANGO_CSRF_TRUSTED_ORIGINS")
+
+if not DEBUG:
+    # На сервере перед Django стоит Caddy с HTTPS.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_AGE = 60 * 60 * 24 * 30  # ведущий не перелогинивается месяц
+    # Редирект на HTTPS и заголовок HSTS делает Caddy (frontend/Caddyfile).
+    SILENCED_SYSTEM_CHECKS = ["security.W004", "security.W008"]
 
 INSTALLED_APPS = [
     "daphne",
@@ -111,3 +122,10 @@ MEDIA_ROOT = BASE_DIR / "media"
 DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "root": {"handlers": ["console"], "level": "INFO" if not DEBUG else "WARNING"},
+}

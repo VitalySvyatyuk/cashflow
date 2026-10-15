@@ -1,0 +1,39 @@
+# Сервер игры: HTTPS-сертификат Caddy получает и продлевает сам.
+{$SITE_DOMAIN} {
+	encode zstd gzip
+
+	# API, WebSocket и админка — в Django
+	@backend path /api/* /ws/* /admin/*
+	handle @backend {
+		reverse_proxy backend:8000
+	}
+
+	# Статика админки и загруженные картинки — прямо с диска
+	handle_path /static/* {
+		root * /srv/static
+		file_server
+	}
+	handle_path /media/* {
+		root * /srv/media
+		file_server
+	}
+
+	# Фронтенд: все остальные пути отдают index.html (маршрутизация в браузере)
+	handle {
+		root * /srv/app
+		try_files {path} /index.html
+		file_server
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+}
+
+www.{$SITE_DOMAIN} {
+	redir https://{$SITE_DOMAIN}{uri} permanent
+}
