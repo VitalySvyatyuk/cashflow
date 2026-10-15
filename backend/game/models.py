@@ -149,6 +149,7 @@ class Game(models.Model):
         CHOOSE_DEAL = "choose_deal", "Выбор сделки"
         CARD = "card", "Открыта карточка"
         PAY = "pay", "Оплата карточки"
+        INCOME = "income", "Получение дохода"
         CHARITY = "charity", "Благотворительность"
         BUSINESS = "business", "Покупка бизнеса"
         DREAM = "dream", "Покупка мечты"
@@ -179,6 +180,8 @@ class Game(models.Model):
     turn_number = models.PositiveIntegerField("номер хода", default=0)
     phase = models.CharField("фаза хода", max_length=20, choices=Phase.choices, default=Phase.ROLL)
     dice = models.JSONField("последний бросок", default=list, blank=True)
+    # Сколько клеток «Доход» прошла фишка за ход — игрок получает их кнопкой «Получить».
+    paydays = models.PositiveSmallIntegerField("доходов к получению", default=0)
     current_card = models.ForeignKey(
         "Card",
         on_delete=models.SET_NULL,

@@ -80,6 +80,8 @@ class Bot:
                 self.act(player, "choose_deal", size=size)
             elif phase == Game.Phase.CARD:
                 self.handle_card(player)
+            elif phase == Game.Phase.INCOME:
+                self.act(player, "collect_income")
             elif phase == Game.Phase.PAY:
                 self.act(player, "pay_card")
             elif phase == Game.Phase.CHARITY:

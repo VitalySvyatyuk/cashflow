@@ -291,6 +291,7 @@ def _next_turn(game):
 
     game.current_player = player
     game.turn_number += 1
+    game.paydays = 0  # ведущий мог передать ход, пока доход не получен
     game.dice = []
     game.current_card = None
     game.phase = Game.Phase.ROLL
@@ -333,22 +334,38 @@ def _move(ctx, steps):
     )
 
     income_kind = CellKind.PAYCHECK if player.track == Track.RAT_RACE else CellKind.CASHFLOW_DAY
-    for cell in passed:
-        if cell.kind == income_kind:
-            _payday(game, player)
-    _land(ctx, passed[-1])
+    paydays = sum(cell.kind == income_kind for cell in passed)
+    if paydays:
+        # Доход игрок получает сам кнопкой «Получить», после этого срабатывает клетка.
+        _announce_landing(game, player, passed[-1])
+        game.paydays = paydays
+        _set_phase(game, Game.Phase.INCOME)
+        game.save(update_fields=["paydays"])
+    else:
+        _land(ctx, passed[-1])
+
+
+def _income_amount(player):
+    if player.track == Track.FAST_TRACK:
+        return player.fast_track_income
+    return statement(player).cashflow
+
+
+def _run_collect_income(ctx):
+    game, player = ctx.game, ctx.player
+    for _ in range(game.paydays):
+        _payday(game, player)
+    game.paydays = 0
+    game.save(update_fields=["paydays"])
+    _land(ctx, _current_cell(ctx), announce=False)
 
 
 def _payday(game, player):
-    if player.track == Track.FAST_TRACK:
-        amount = player.fast_track_income
+    amount = _income_amount(player)
+    if amount >= 0:
         receive(player, amount)
     else:
-        amount = statement(player).cashflow
-        if amount >= 0:
-            receive(player, amount)
-        else:
-            pay(player, -amount, "отрицательный денежный поток")
+        pay(player, -amount, "отрицательный денежный поток")
     log_event(
         game,
         "payday",
@@ -358,8 +375,7 @@ def _payday(game, player):
     )
 
 
-def _land(ctx, cell):
-    game, player = ctx.game, ctx.player
+def _announce_landing(game, player, cell):
     log_event(
         game,
         "landed",
@@ -368,6 +384,12 @@ def _land(ctx, cell):
         cell_kind=cell.kind,
         text=f"{player.name}: {cell.title}",
     )
+
+
+def _land(ctx, cell, announce=True):
+    game, player = ctx.game, ctx.player
+    if announce:
+        _announce_landing(game, player, cell)
     match cell.kind:
         case CellKind.OPPORTUNITY:
             _set_phase(game, Game.Phase.CHOOSE_DEAL)
@@ -938,6 +960,7 @@ ACTIONS = {
         current_only=False,
         phases=CARD_OPEN,
     ),
+    "collect_income": Action("Доход", AUTO, _run_collect_income, phases=(P.INCOME,)),
     "pay_card": Action("Оплата", AUTO, _run_pay_card, phases=(P.PAY,)),
     "pass": Action(
         "Отказ", AUTO, _run_pass, phases=(P.CHOOSE_DEAL, P.CARD, P.CHARITY, P.BUSINESS, P.DREAM)

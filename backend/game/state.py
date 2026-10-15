@@ -101,6 +101,7 @@ def build_state(game_id):
         "current_player_id": game.current_player_id,
         "phase": game.phase,
         "dice": game.dice,
+        "paydays": game.paydays,
         "current_card": CardSerializer(game.current_card).data if game.current_card else None,
         "winner_id": game.winner_id,
         "players": PlayerStateSerializer(players, many=True).data,

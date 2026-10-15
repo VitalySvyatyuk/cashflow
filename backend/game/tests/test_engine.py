@@ -137,12 +137,46 @@ def test_cannot_roll_twice(started, masha):
         act(started, masha, "roll", rnd=Dice(1))
 
 
-def test_passing_paycheck_pays_cashflow(started, masha):
+def test_passing_paycheck_waits_for_collect(started, masha, petya):
     place(masha, cell_position(CellKind.PAYCHECK) - 1)
     cash = masha.cash
     flow = statement(masha).cashflow
-    act(started, masha, "roll", rnd=Dice(2))  # проходит зарплату, встаёт на «Возможность»
+    act(started, masha, "roll", rnd=Dice(2))  # проходит «Доход», встаёт на «Возможность»
+    started.refresh_from_db()
+    assert (started.phase, started.paydays) == (Game.Phase.INCOME, 1)
+    assert fresh(masha).cash == cash  # пока не нажал «Получить»
+    assert started.events.filter(kind="landed").count() == 1
+    with pytest.raises(GameError, match="нельзя"):
+        act(started, masha, "end_turn")
+    with pytest.raises(GameError, match="не ваш ход"):
+        act(started, petya, "collect_income")
+
+    act(started, masha, "collect_income")
+    started.refresh_from_db()
     assert fresh(masha).cash == cash + flow
+    assert (started.phase, started.paydays) == (Game.Phase.CHOOSE_DEAL, 0)  # клетка сработала
+    assert started.events.filter(kind="landed").count() == 1  # без повторного объявления
+
+
+def test_two_paychecks_in_one_move(started, masha):
+    cells = list(
+        BoardCell.objects.filter(track=Track.RAT_RACE, kind=CellKind.PAYCHECK).values_list(
+            "position", flat=True
+        )
+    )
+    first, second = cells[0], cells[1]
+    place(masha, first - 1)
+    cash, flow = masha.cash, statement(masha).cashflow
+    steps = second - first + 1  # встаёт прямо на второй «Доход»
+    act(started, masha, "roll", rnd=Dice(6, steps - 6), dice=2)
+    assert fresh(started).paydays == 2
+    act(started, masha, "collect_income")
+    assert fresh(masha).cash == cash + 2 * flow
+
+
+def test_landing_without_paycheck_skips_income(started, masha):
+    place(masha, cell_position(CellKind.PAYCHECK))  # уже стоит на «Доходе»
+    act(started, masha, "roll", rnd=Dice(1))
     assert fresh(started).phase == Game.Phase.CHOOSE_DEAL
 
 
@@ -208,6 +242,7 @@ def test_downsized_pays_and_skips_turns(started, masha, petya):
     assert fresh(started).current_player == petya
     place(petya, cell_position(CellKind.PAYCHECK) - 1)
     act(started, petya, "roll", rnd=Dice(1))
+    act(started, petya, "collect_income")
     act(started, petya, "end_turn")
     # Маша пропускает — снова ход Пети
     assert fresh(started).current_player == petya
@@ -465,12 +500,15 @@ def test_undo_restores_previous_state(started, masha):
 def test_undo_restores_liabilities_and_turn(started, masha, petya):
     place(masha, cell_position(CellKind.PAYCHECK) - 1)
     act(started, masha, "roll", rnd=Dice(1))
+    act(started, masha, "collect_income")
     approve(started, act(started, masha, "take_loan", amount=20_000))
     act(started, masha, "end_turn")
     assert fresh(started).current_player == petya
 
     host(started, "undo")  # конец хода
     host(started, "undo")  # кредит
+    host(started, "undo")  # доход
+    assert fresh(started).phase == Game.Phase.INCOME
     assert fresh(started).current_player == masha
     assert not masha.liabilities.filter(title=BANK_LOAN_TITLE).exists()
 

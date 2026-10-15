@@ -95,6 +95,19 @@ export function PlayerActions({
         }
         buttons.push(button(card?.category === "market" ? "Закрыть карточку" : "Отказаться", "pass"));
         break;
+      case "income": {
+        const perPayday = me.track === "rat_race" ? me.statement.cashflow : me.fast_track_income;
+        const amount = perPayday * state.paydays;
+        const times = state.paydays > 1 ? ` (${state.paydays} раза)` : "";
+        buttons.push(
+          <button key="income" className="ok" disabled={disabled} onClick={() => action("collect_income")}>
+            {amount >= 0
+              ? `Получить ${money(amount)}${times}`
+              : `Оплатить расходы ${money(-amount)}${times}`}
+          </button>,
+        );
+        break;
+      }
       case "pay": {
         const amount = (card?.effect as { amount?: number } | undefined)?.amount ?? 0;
         buttons.push(

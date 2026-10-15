@@ -6,6 +6,7 @@ export type Phase =
   | "choose_deal"
   | "card"
   | "pay"
+  | "income"
   | "charity"
   | "business"
   | "dream"
@@ -116,6 +117,8 @@ export interface GameState {
   current_player_id: number | null;
   phase: Phase;
   dice: number[];
+  /** Сколько клеток «Доход» прошла фишка — получает кнопкой «Получить». */
+  paydays: number;
   current_card: Card | null;
   winner_id: number | null;
   players: PlayerState[];

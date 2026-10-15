@@ -13,6 +13,7 @@ GAME_FIELDS = [
     "current_card_id",
     "current_player_id",
     "winner_id",
+    "paydays",
 ]
 PLAYER_FIELDS = [
     "track",
