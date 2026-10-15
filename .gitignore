@@ -25,3 +25,6 @@ frontend/dist/
 .idea/
 .vscode/
 .DS_Store
+
+# Доступы к серверу — никогда не коммитить
+.server_credentials
