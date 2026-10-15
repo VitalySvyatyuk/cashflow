@@ -10,7 +10,6 @@ from game.models import (
     BoardCell,
     Card,
     Category,
-    DeckState,
     Game,
     GameEvent,
     Liability,
@@ -189,8 +188,3 @@ class PendingActionAdmin(admin.ModelAdmin):
 class GameEventAdmin(admin.ModelAdmin):
     list_display = ["seq", "game", "player", "kind", "created_at"]
     list_filter = ["game"]
-
-
-@admin.register(DeckState)
-class DeckStateAdmin(admin.ModelAdmin):
-    list_display = ["game", "category", "next_index"]
