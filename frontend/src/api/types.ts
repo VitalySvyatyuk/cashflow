@@ -90,6 +90,8 @@ export interface PlayerState {
   fast_track_income: number;
   /** Платил благотворительность в большом круге — выбор 1–3 кубиков до конца игры. */
   fast_track_charity: boolean;
+  /** Мечта — id клетки большого круга (null — ещё не выбрана). */
+  dream_id: number | null;
   /** Сколько кубиков можно бросить сейчас (одно значение — без выбора). */
   dice_options: number[];
   statement: Statement;

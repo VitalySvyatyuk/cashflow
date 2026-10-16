@@ -333,6 +333,54 @@ def test_dream_needs_host_approval(started, masha):
     assert fresh(masha).cash < RICH
 
 
+def dream_cells():
+    return list(BoardCell.objects.filter(cell_type__kind=CellKind.DREAM).order_by("position"))
+
+
+def test_fast_track_has_eleven_dreams_and_one_charity(seeded):
+    cells = BoardCell.objects.filter(track=Track.FAST_TRACK)
+    assert cells.filter(cell_type__kind=CellKind.DREAM).count() == 11
+    assert cells.filter(cell_type__kind=CellKind.CHARITY).count() == 1
+
+
+def test_choose_dream_once_any_time(started, masha, petya):
+    first, second = dream_cells()[:2]
+    act(started, petya, "choose_dream", cell_id=first.id)  # не его ход — можно
+    act(started, masha, "choose_dream", cell_id=first.id)  # одну мечту могут выбрать двое
+    assert fresh(masha).dream == first
+    assert fresh(petya).dream == first
+    with pytest.raises(GameError, match="уже выбрана"):
+        act(started, masha, "choose_dream", cell_id=second.id)
+
+
+def test_choose_dream_rejects_other_cells(started, masha):
+    business = BoardCell.objects.filter(cell_type__kind=CellKind.BUSINESS).first()
+    with pytest.raises(GameError, match="нет"):
+        act(started, masha, "choose_dream", cell_id=business.id)
+
+
+def test_landing_on_someone_elses_dream_ends_turn(started, masha):
+    mine, other = dream_cells()[:2]
+    act(started, masha, "choose_dream", cell_id=mine.id)
+    place(fresh(masha), other.position - 1, Track.FAST_TRACK)
+    act(started, masha, "roll", rnd=Dice(1, 0))
+    assert fresh(started).phase == Game.Phase.END_TURN
+    assert "не ваша мечта" in started.events.last().payload["text"]
+
+
+def test_only_own_dream_can_be_bought(started, masha):
+    dream_phase(started, masha)
+    mine = BoardCell.objects.get(track=Track.FAST_TRACK, position=fresh(masha).position)
+    other = next(c for c in dream_cells() if c != mine)
+    masha.dream = other
+    masha.save()
+    with pytest.raises(GameError, match="свою мечту"):
+        act(started, masha, "buy_dream")
+    masha.dream = mine
+    masha.save()
+    assert act(started, masha, "buy_dream").status == PendingAction.Status.PENDING
+
+
 def test_host_amends_request(started, masha):
     pending = act(started, masha, "take_loan", amount=50_000)
     approve(started, pending, amount=20_000)

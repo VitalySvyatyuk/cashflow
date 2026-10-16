@@ -46,6 +46,7 @@ class PlayerStateSerializer(serializers.ModelSerializer):
     profession = serializers.SerializerMethodField()
     statement = serializers.SerializerMethodField()
     dice_options = serializers.SerializerMethodField()
+    dream_id = serializers.IntegerField(read_only=True, allow_null=True)
     assets = AssetSerializer(many=True, read_only=True)
     liabilities = LiabilitySerializer(many=True, read_only=True)
     loans_given = LoanGivenSerializer(many=True, read_only=True)
@@ -66,6 +67,7 @@ class PlayerStateSerializer(serializers.ModelSerializer):
             "skip_turns",
             "fast_track_income",
             "fast_track_charity",
+            "dream_id",
             "dice_options",
             "statement",
             "assets",

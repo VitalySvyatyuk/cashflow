@@ -442,7 +442,16 @@ def _land(ctx, cell, announce=True):
         case CellKind.BUSINESS:
             _set_phase(game, Game.Phase.BUSINESS)
         case CellKind.DREAM:
-            _set_phase(game, Game.Phase.DREAM)
+            if player.dream_id in (None, cell.id):
+                _set_phase(game, Game.Phase.DREAM)
+            else:
+                log_event(
+                    game,
+                    "not_my_dream",
+                    player=player,
+                    text=f"{player.name}: «{cell.title}» — не ваша мечта, купить её нельзя",
+                )
+                _set_phase(game, Game.Phase.END_TURN)
         case CellKind.LOSS:
             amount = player.cash * (cell.loss_percent or 50) // 100
             pay(player, amount, cell.title)
@@ -928,6 +937,45 @@ def _run_buy_dream(ctx):
     )
 
 
+def _check_buy_dream(ctx):
+    cell = _current_cell(ctx)
+    if ctx.player.dream_id not in (None, cell.id):
+        raise GameError("Купить можно только свою мечту.")
+    _check_cell_purchase(ctx)
+
+
+def _parse_dream(params):
+    return {"cell_id": parse_int(params.get("cell_id"), "cell_id")}
+
+
+def _dream_cell(ctx):
+    cell = BoardCell.objects.filter(
+        id=ctx.params["cell_id"], track=Track.FAST_TRACK, cell_type__kind=CellKind.DREAM
+    ).first()
+    if cell is None:
+        raise GameError("Такой мечты нет.")
+    return cell
+
+
+def _check_choose_dream(ctx):
+    if ctx.player.dream_id is not None:
+        raise GameError("Мечта уже выбрана.")
+    _dream_cell(ctx)
+
+
+def _run_choose_dream(ctx):
+    cell = _dream_cell(ctx)
+    ctx.player.dream = cell
+    ctx.player.save(update_fields=["dream"])
+    log_event(
+        ctx.game,
+        "dream_chosen",
+        player=ctx.player,
+        cell_id=cell.id,
+        text=f"{ctx.player.name} мечтает: {cell.title} ({_money(cell.cost or 0)})",
+    )
+
+
 def _parse_amount(params):
     return {"amount": parse_int(params.get("amount"), "amount", 1)}
 
@@ -1256,9 +1304,19 @@ ACTIONS = {
         "Покупка мечты",
         APPROVE,
         _run_buy_dream,
-        _check_cell_purchase,
+        _check_buy_dream,
         describe=lambda ctx: f"купить мечту «{_current_cell(ctx).title}»",
         phases=(P.DREAM,),
+    ),
+    "choose_dream": Action(
+        "Выбор мечты",
+        AUTO,
+        _run_choose_dream,
+        _check_choose_dream,
+        _parse_dream,
+        current_only=False,
+        undoable=False,
+        phase_bound=False,
     ),
     "offer_loan": Action(
         "Предложение займа",

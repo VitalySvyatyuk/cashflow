@@ -916,3 +916,58 @@ ul.plain {
 .lend .qty {
   width: 60px;
 }
+
+/* Мечты */
+.dream-star {
+  stroke: #fff;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  pointer-events: auto;
+}
+.dream-star-me {
+  stroke-width: 3.5;
+}
+.dream-mark {
+  text-shadow: 0 0 1px rgb(0 0 0 / 0.8);
+}
+.dreams {
+  width: 100%;
+  text-align: left;
+  font-size: 15px;
+}
+.dreams ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+}
+button.dream {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  text-align: left;
+  white-space: normal;
+  background: transparent;
+  color: inherit;
+}
+button.dream:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+.dream-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dream-head span {
+  white-space: nowrap;
+  color: var(--accent);
+  font-weight: 600;
+}
+.dream-chosen {
+  font-size: 16px;
+}

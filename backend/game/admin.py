@@ -11,6 +11,7 @@ from game.models import (
     BoardCell,
     Card,
     Category,
+    CellKind,
     CellType,
     Game,
     GameEvent,
@@ -189,6 +190,19 @@ class BoardCellAdmin(admin.ModelAdmin):
 
     class Media:
         js = ["game/kind_fields.js"]
+
+    @staticmethod
+    def _is_dream(obj):
+        return obj is not None and obj.cell_type.kind == CellKind.DREAM
+
+    def get_readonly_fields(self, request, obj=None):
+        # Мечты закреплены за клетками и одинаковы во всех играх — их не правят.
+        if self._is_dream(obj):
+            return [f for _, opts in self.fieldsets for f in opts["fields"]]
+        return []
+
+    def has_delete_permission(self, request, obj=None):
+        return not self._is_dream(obj) and super().has_delete_permission(request, obj)
 
 
 class PlayerInline(admin.TabularInline):

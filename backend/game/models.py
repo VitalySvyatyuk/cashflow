@@ -462,6 +462,16 @@ class Player(models.Model):
     fast_track_income = models.PositiveIntegerField("доход скоростной дорожки", default=0)
     # Благотворительность в большом круге: выбор 1–3 кубиков до конца игры.
     fast_track_charity = models.BooleanField("благотворительность в большом круге", default=False)
+    # Мечта — клетка большого круга. Выигрывает тот, кто купит свою мечту.
+    dream = models.ForeignKey(
+        "BoardCell",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="dreamers",
+        limit_choices_to={"cell_type__kind": CellKind.DREAM},
+        verbose_name="мечта",
+    )
     joined_at = models.DateTimeField("подключился", auto_now_add=True)
 
     class Meta:

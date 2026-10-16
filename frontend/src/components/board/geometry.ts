@@ -80,3 +80,26 @@ export function tokenPoint(
   const base = polar(radius + across, angle);
   return { x: base.x + along * Math.cos(rad), y: base.y + along * Math.sin(rad) };
 }
+
+const STAR_RADIUS = 15;
+const STAR_GAP = 28;
+
+/** Звёзды мечт — в середине клетки большого круга, рядом друг с другом; фишки встают поверх. */
+export function dreamStarPoint(position: number, count: number, index = 0, together = 1): Point {
+  const ring = RINGS.fast_track;
+  const [a0, a1] = cellAngles(position, count);
+  const radius = (ring.inner + ring.outer) / 2;
+  const arc = ((a1 - a0) * Math.PI * radius) / 180;
+  const gap = Math.min(STAR_GAP, (arc - 2 * STAR_RADIUS) / Math.max(together - 1, 1));
+  const along = (index - (together - 1) / 2) * gap;
+  return polar(radius, (a0 + a1) / 2 + (along / (Math.PI * radius)) * 180);
+}
+
+/** Пятиконечная звезда с центром в (0, 0). */
+export function starPoints(outer = STAR_RADIUS, inner = STAR_RADIUS * 0.45): string {
+  return Array.from({ length: 10 }, (_, i) => {
+    const r = i % 2 ? inner : outer;
+    const a = (i * Math.PI) / 5;
+    return `${(r * Math.sin(a)).toFixed(2)},${(-r * Math.cos(a)).toFixed(2)}`;
+  }).join(" ");
+}

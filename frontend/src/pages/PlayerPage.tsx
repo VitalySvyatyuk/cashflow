@@ -5,6 +5,7 @@ import { CLOSE_FORBIDDEN, CLOSE_GAME_NOT_FOUND, CLOSE_REMOVED } from "../api/soc
 import { Board } from "../components/board/Board";
 import { GameCard } from "../components/card/GameCard";
 import { Dice } from "../components/dice/Dice";
+import { DreamPicker } from "../components/DreamPicker";
 import { SoundToggle } from "../components/SoundToggle";
 import { useGameSounds } from "../lib/useGameSounds";
 import { ConnectionBadge } from "../components/ConnectionBadge";
@@ -95,8 +96,11 @@ export function PlayerPage() {
 
   const view = settled ?? state;
   const paused = state.status === "paused";
+  // Без мечты окно не закрыть: оно появляется снова, пока мечта не выбрана.
   const showWelcome =
-    !welcomeClosed && state.status !== "finished" && !!me.profession && !isWelcomed(saved.token);
+    state.status !== "finished" &&
+    !!me.profession &&
+    (me.dream_id == null || (!welcomeClosed && !isWelcomed(saved.token)));
   const closeWelcome = () => {
     markWelcomed(saved.token);
     setWelcomeClosed(true);
@@ -145,13 +149,14 @@ export function PlayerPage() {
         </Modal>
       )}
       {showWelcome && me.profession && (
-        <Modal title="Добро пожаловать в игру!" onClose={closeWelcome}>
+        <Modal title="Добро пожаловать в игру!" onClose={closeWelcome} closable={me.dream_id != null}>
           <div className="welcome">
             <ProfessionIcon profession={me.profession} size={64} />
             <p>
               Сегодня ваша профессия: <b>{me.profession.name}</b>
             </p>
-            <button onClick={closeWelcome}>Начать</button>
+            <DreamPicker me={me} disabled={paused} />
+            {me.dream_id != null && <button onClick={closeWelcome}>Начать</button>}
           </div>
         </Modal>
       )}

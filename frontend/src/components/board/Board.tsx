@@ -5,7 +5,16 @@ import { useBoard } from "../../api/board";
 import type { BoardCell, GameState, PlayerState, Track } from "../../api/types";
 import { textOn } from "../../lib/format";
 import { onGameEvent } from "../../store/game";
-import { CENTER, RINGS, SIZE, TOKEN_RADIUS, sectorPath, tokenPoint } from "./geometry";
+import {
+  CENTER,
+  RINGS,
+  SIZE,
+  TOKEN_RADIUS,
+  dreamStarPoint,
+  sectorPath,
+  starPoints,
+  tokenPoint,
+} from "./geometry";
 import { msUntilArrival } from "../../lib/movement";
 import { STEP_MS } from "../../lib/timing";
 import { useTokenSteps, type Spot } from "./useTokenSteps";
@@ -84,6 +93,26 @@ export function Board({ state, meId, children }: Props) {
             </path>
           )),
         )}
+
+        {board.fast_track.map((cell) => {
+          const dreamers = state.players.filter((p) => p.dream_id === cell.id);
+          return dreamers.map((p, i) => {
+            const { x, y } = dreamStarPoint(cell.position, board.fast_track.length, i, dreamers.length);
+            return (
+              <polygon
+                key={`dream-${p.id}`}
+                points={starPoints()}
+                transform={`translate(${x.toFixed(2)} ${y.toFixed(2)})`}
+                fill={p.color}
+                className={`dream-star ${p.id === meId ? "dream-star-me" : ""}`}
+              >
+                <title>
+                  Мечта игрока {p.name}: {cell.title}
+                </title>
+              </polygon>
+            );
+          });
+        })}
 
         {currentSpot && board[currentSpot.track].length > 0 && (
           <path

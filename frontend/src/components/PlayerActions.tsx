@@ -208,7 +208,8 @@ export function PlayerActions({
         buttons.push(button("Отказаться", "pass"));
         break;
       case "dream":
-        buttons.push(button("Купить мечту", "buy_dream"));
+        buttons.push(button(`Купить мечту за ${money(currentCellCost)}`, "buy_dream"));
+        if (currentCellCost > me.cash) buttons.push(loanButton(currentCellCost));
         buttons.push(button("Отказаться", "pass"));
         break;
       case "skip":

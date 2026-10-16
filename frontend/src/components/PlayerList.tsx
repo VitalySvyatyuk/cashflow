@@ -1,3 +1,4 @@
+import { useBoard } from "../api/board";
 import type { GameState } from "../api/types";
 import { money } from "../lib/format";
 import { useGame } from "../store/game";
@@ -14,6 +15,8 @@ export function PlayerList({
 }) {
   const presence = useGame((s) => s.presence);
   const online = (id: number) => presence?.players.includes(id) ?? false;
+  const board = useBoard();
+  const dream = (id: number | null) => board?.fast_track.find((c) => c.id === id);
   return (
     <ul className="players">
       {state.players.map((p) => (
@@ -31,6 +34,11 @@ export function PlayerList({
           <span className="name">
             <ProfessionIcon profession={p.profession} size={18} /> {p.name}
             {p.id === meId && " (вы)"}
+            {dream(p.dream_id) && (
+              <span className="dream-mark" style={{ color: p.color }} title={`Мечта: ${dream(p.dream_id)!.title}`}>
+                {"\u00a0"}★
+              </span>
+            )}
           </span>
           {state.status !== "lobby" && <span className="cash">{money(p.cash)}</span>}
           {p.id === state.current_player_id && <span className="turn">ход</span>}

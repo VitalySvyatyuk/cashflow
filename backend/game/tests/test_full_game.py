@@ -12,7 +12,7 @@ from game import lobby
 from game.engine import HOST_ACTOR, Actor, decide, submit_action
 from game.errors import GameError
 from game.finance import BANK_LOAN_STEP, BANK_LOAN_TITLE, statement
-from game.models import Asset, BoardCell, Game, PendingAction, Track
+from game.models import Asset, BoardCell, CellKind, Game, PendingAction, Track
 from game.state import build_state
 
 pytestmark = pytest.mark.django_db
@@ -185,6 +185,10 @@ def test_bot_plays_full_game(host, seeded, seed):
     game.refresh_from_db()
 
     bot = Bot(game, seed)
+    # Каждый выбирает мечту; одну и ту же могут выбрать несколько игроков.
+    dreams = list(BoardCell.objects.filter(cell_type__kind=CellKind.DREAM))
+    for player in game.players.all():
+        bot.act(player, "choose_dream", cell_id=bot.rnd.choice(dreams).id)
     for _ in range(MAX_TURNS):
         bot.play_turn()
         game.refresh_from_db()
