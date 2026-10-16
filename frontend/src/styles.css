@@ -250,10 +250,17 @@ select {
 
 .chip {
   display: inline-block;
+  flex: none;
   width: 12px;
   height: 12px;
   border-radius: 50%;
   vertical-align: middle;
+  /* Отступ до имени рядом — пробел в разметке не нужен */
+  margin-right: 0.45em;
+}
+/* В строках-флексах отступ уже задаёт gap */
+.players li > .chip {
+  margin-right: 0;
 }
 
 .players {

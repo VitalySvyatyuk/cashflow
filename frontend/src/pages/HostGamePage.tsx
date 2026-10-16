@@ -143,7 +143,7 @@ function HostGame({ state }: { state: GameState }) {
                 title="Финансовый отчёт"
               >
                 <td>
-                  <span className="chip" style={{ background: p.color }} />{" "}
+                  <span className="chip" style={{ background: p.color }} />
                   <span
                     className={`presence ${presence?.players.includes(p.id) ? "on" : "off"}`}
                     title={presence?.players.includes(p.id) ? "в сети" : "не в сети"}

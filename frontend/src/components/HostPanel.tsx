@@ -36,7 +36,8 @@ function Approval({ request, state }: { request: PendingAction; state: GameState
   return (
     <li>
       <div>
-        <span className="chip" style={{ background: player?.color }} /> <b>{player?.name}</b>:{" "}
+        <span className="chip" style={{ background: player?.color }} />
+        <b>{player?.name}</b>:{" "}
         {request.description}
       </div>
       {editable.map((key) => (
