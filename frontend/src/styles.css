@@ -7,35 +7,26 @@
 }
 
 :root {
-  --bg: #f4f1ea;
-  /* Игровое сукно под полем — одинаковое в светлой и тёмной теме */
+  /* Всё оформлено как игровой стол: поле на светлом сукне, вокруг — тёмное сукно,
+     акценты золотые. Тема одна, от светлой/тёмной темы системы не зависит. */
   --felt: #1f5e46;
   --felt-dark: #0f3324;
   --felt-center: #174a37;
   --felt-gold: #f1d58a;
-  --panel: #ffffff;
-  --text: #1f2328;
-  --muted: #6b7280;
-  --border: #ddd6c8;
-  --accent: #2e7d32;
-  --accent-text: #ffffff;
+  --bg: #0b231a;
+  --panel: #102c21;
+  --text: #eef5ee;
+  --muted: #9dbcaa;
+  --border: #24503e;
+  --accent: #e8c25e;
+  --accent-text: #1a2a1f;
   --warn: #ef6c00;
   --danger: #c62828;
-  --current: #fff7d6;
+  --current: #2f3d22;
   --radius: 10px;
+  color-scheme: dark;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   color: var(--text);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #17191c;
-    --panel: #22252a;
-    --text: #e8e6e3;
-    --muted: #9aa0a6;
-    --border: #3a3f46;
-    --current: #3a3420;
-  }
 }
 
 * {
@@ -77,9 +68,11 @@ button.ok {
 }
 button.warn {
   background: var(--warn);
+  color: #fff;
 }
 button.danger {
   background: var(--danger);
+  color: #fff;
 }
 button.link {
   background: none;
