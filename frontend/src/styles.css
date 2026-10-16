@@ -550,10 +550,6 @@ ul.plain {
   font-weight: 800;
   letter-spacing: 2px;
   fill: var(--felt-gold);
-  transition: transform 0.4s ease;
-}
-.board-title-up {
-  transform: translateY(-112px);
 }
 .token {
   filter: drop-shadow(0 3px 3px rgb(0 0 0 / 0.45));

@@ -167,10 +167,9 @@ export function Board({ state, meId, children }: Props) {
 
         <circle cx={CENTER} cy={CENTER} r={RINGS.rat_race.inner - 14} className="board-center" />
         <circle cx={CENTER} cy={CENTER} r={RINGS.rat_race.inner - 34} className="board-center-ring" />
-        {/* Название видно и во время броска — тогда оно уходит вверх, освобождая место кубикам;
-            прячется только под открытой карточкой. */}
+        {/* Название видно и во время броска; прячется только под открытой карточкой. */}
         {!state.current_card && (
-          <text className={`board-title ${state.dice.length ? "board-title-up" : ""}`}>
+          <text className="board-title">
             <tspan x={CENTER} y={CENTER - 14}>
               ДЕНЕЖНЫЙ
             </tspan>
