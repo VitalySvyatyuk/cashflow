@@ -1,5 +1,25 @@
+/* Значки клеток — Material Symbols Rounded, только нужные (Apache 2.0);
+   название в центре поля — Unbounded, кириллица (OFL). Файлы лежат в public/fonts. */
+@font-face {
+  font-family: "Board Icons";
+  font-weight: 500;
+  font-display: block;
+  src: url("/fonts/material-symbols-board.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Unbounded";
+  font-weight: 800;
+  font-display: swap;
+  src: url("/fonts/unbounded-800-cyrillic.woff2") format("woff2");
+}
+
 :root {
   --bg: #f4f1ea;
+  /* Игровое сукно под полем — одинаковое в светлой и тёмной теме */
+  --felt: #1f5e46;
+  --felt-dark: #0f3324;
+  --felt-center: #174a37;
+  --felt-gold: #f1d58a;
   --panel: #ffffff;
   --text: #1f2328;
   --muted: #6b7280;
@@ -505,38 +525,53 @@ ul.plain {
   height: 100%;
   display: block;
 }
+.game-layout > .board-area {
+  background: radial-gradient(120% 90% at 50% 45%, var(--felt) 0%, var(--felt-dark) 100%);
+}
 .board .cell {
-  stroke: var(--bg);
+  stroke: var(--felt-dark);
   stroke-width: 3;
+}
+.board .cell-icon {
+  font-family: "Board Icons";
+  font-feature-settings: "liga";
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+  -webkit-font-smoothing: antialiased;
 }
 .board .cell:hover {
   filter: brightness(1.15);
 }
 .board-center {
-  fill: var(--panel);
-  stroke: var(--border);
+  fill: var(--felt-center);
+  stroke: rgb(255 255 255 / 0.15);
   stroke-width: 2;
+}
+.board-center-ring {
+  fill: none;
+  stroke: var(--felt-gold);
+  stroke-opacity: 0.25;
+  stroke-width: 1.5;
+  stroke-dasharray: 3 7;
 }
 .board-title {
   text-anchor: middle;
-  font-size: 34px;
-  font-weight: 700;
-  letter-spacing: 0.15em;
-  fill: var(--muted);
-  opacity: 0.35;
+  font-family: "Unbounded", system-ui, sans-serif;
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  fill: var(--felt-gold);
 }
 .token {
-  stroke: #fff;
-  stroke-width: 3;
-  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.45));
-}
-.token-me {
-  stroke: #111;
+  filter: drop-shadow(0 3px 3px rgb(0 0 0 / 0.45));
 }
 .token-label {
   text-anchor: middle;
-  font-size: 15px;
-  font-weight: 700;
+  dominant-baseline: central;
+  font-family: "Unbounded", system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 800;
   pointer-events: none;
 }
 /* Центр поля (внутри крысиных бегов) — для кубиков и карточки */
@@ -970,4 +1005,23 @@ button.dream:hover:not(:disabled) {
 }
 .dream-chosen {
   font-size: 16px;
+}
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 0;
+}
+.legend-chip {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: inline-grid;
+  place-items: center;
+}
+.legend-chip .cell-icon {
+  font-family: "Board Icons";
+  font-feature-settings: "liga";
+  font-size: 17px;
+  line-height: 1;
 }

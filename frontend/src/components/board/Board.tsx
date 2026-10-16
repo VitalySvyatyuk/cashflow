@@ -18,6 +18,10 @@ import {
 import { msUntilArrival } from "../../lib/movement";
 import { STEP_MS } from "../../lib/timing";
 import { useTokenSteps, type Spot } from "./useTokenSteps";
+import { CELL_ICONS, iconInk, shade } from "./icons";
+
+// Размер значка на клетке: малый круг шире, большой — 40 узких клеток.
+const ICON_SIZE: Record<Track, number> = { rat_race: 38, fast_track: 30 };
 
 const LANDING_SHOW_MS = 5000;
 
@@ -77,21 +81,61 @@ export function Board({ state, meId, children }: Props) {
 
   const current = state.players.find((p) => p.id === state.current_player_id);
   const currentSpot = current ? spotOf(current) : null;
+  // На мечте, которую кто-то выбрал, вместо значка — звёзды цвета игроков.
+  const chosenDreams = new Set(state.players.map((p) => p.dream_id));
 
   return (
     <div className="board">
       <svg viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label="Игровое поле">
+        <defs>
+          <filter id="token-shadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="3" stdDeviation="3" floodOpacity="0.45" />
+          </filter>
+          <filter id="ring-shadow" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="0" dy="6" stdDeviation="10" floodOpacity="0.5" />
+          </filter>
+          {state.players.map((p) => (
+            <radialGradient key={p.id} id={`token-${p.id}`} cx="35%" cy="30%" r="75%">
+              <stop offset="0" stopColor={shade(p.color, 0.35)} />
+              <stop offset="0.6" stopColor={p.color} />
+              <stop offset="1" stopColor={shade(p.color, -0.35)} />
+            </radialGradient>
+          ))}
+        </defs>
+
+        <g filter="url(#ring-shadow)">
+          {(["fast_track", "rat_race"] as Track[]).map((track) =>
+            board[track].map((cell) => (
+              <path
+                key={cell.id}
+                d={sectorPath(RINGS[track], cell.position, board[track].length)}
+                fill={cell.color}
+                className="cell"
+              >
+                <title>{cell.title}</title>
+              </path>
+            )),
+          )}
+        </g>
+
         {(["fast_track", "rat_race"] as Track[]).map((track) =>
-          board[track].map((cell) => (
-            <path
-              key={cell.id}
-              d={sectorPath(RINGS[track], cell.position, board[track].length)}
-              fill={cell.color}
-              className="cell"
-            >
-              <title>{cell.title}</title>
-            </path>
-          )),
+          board[track].map((cell) => {
+            const icon = CELL_ICONS[cell.kind];
+            if (!icon || chosenDreams.has(cell.id)) return null;
+            const { x, y } = tokenPoint(track, cell.position, board[track].length);
+            return (
+              <text
+                key={`icon-${cell.id}`}
+                x={x.toFixed(2)}
+                y={y.toFixed(2)}
+                fontSize={ICON_SIZE[track]}
+                fill={iconInk(cell.color)}
+                className="cell-icon"
+              >
+                {icon}
+              </text>
+            );
+          }),
         )}
 
         {board.fast_track.map((cell) => {
@@ -124,10 +168,16 @@ export function Board({ state, meId, children }: Props) {
           />
         )}
 
-        <circle cx={CENTER} cy={CENTER} r={RINGS.rat_race.inner - 12} className="board-center" />
+        <circle cx={CENTER} cy={CENTER} r={RINGS.rat_race.inner - 14} className="board-center" />
+        <circle cx={CENTER} cy={CENTER} r={RINGS.rat_race.inner - 34} className="board-center-ring" />
         {!state.dice.length && !state.current_card && (
-          <text x={CENTER} y={CENTER} dy="0.35em" className="board-title">
-            ДЕНЕЖНЫЙ ПОТОК
+          <text className="board-title">
+            <tspan x={CENTER} y={CENTER - 14}>
+              ДЕНЕЖНЫЙ
+            </tspan>
+            <tspan x={CENTER} y={CENTER + 34}>
+              ПОТОК
+            </tspan>
           </text>
         )}
 
@@ -142,14 +192,7 @@ export function Board({ state, meId, children }: Props) {
               animate={{ x, y }}
               transition={{ duration: (STEP_MS - 40) / 1000, ease: "easeOut" }}
             >
-              <circle
-                r={TOKEN_RADIUS + (player.id === meId ? 3 : 0)}
-                fill={player.color}
-                className={`token ${player.id === meId ? "token-me" : ""}`}
-              />
-              <text className="token-label" dy="0.35em" fill={textOn(player.color)}>
-                {player.name.slice(0, 1).toUpperCase()}
-              </text>
+              <Token player={player} me={player.id === meId} />
               <title>{player.name}</title>
             </motion.g>
           );
@@ -187,11 +230,31 @@ function Legend({ board }: { board: Record<Track, BoardCell[]> }) {
         <ul>
           {[...kinds.values()].map((c) => (
             <li key={c.kind}>
-              <span className="chip" style={{ background: c.color }} /> {c.kind_name}
+              <span className="legend-chip" style={{ background: c.color, color: iconInk(c.color) }}>
+                {CELL_ICONS[c.kind] && <span className="cell-icon">{CELL_ICONS[c.kind]}</span>}
+              </span>{" "}
+              {c.kind_name}
             </li>
           ))}
         </ul>
       )}
     </div>
+  );
+}
+
+/** Объёмная фишка: белый ободок (у своей — золотой), градиент и блик. */
+function Token({ player, me }: { player: PlayerState; me: boolean }) {
+  const r = TOKEN_RADIUS + (me ? 3 : 0);
+  return (
+    <>
+      <g filter="url(#token-shadow)" className="token">
+        <circle r={r + 3} fill={me ? "var(--felt-gold)" : "#fff"} />
+        <circle r={r} fill={`url(#token-${player.id})`} />
+        <ellipse cx={-r * 0.3} cy={-r * 0.38} rx={r * 0.5} ry={r * 0.3} fill="#fff" opacity={0.45} />
+      </g>
+      <text className="token-label" y={1} fontSize={r * 0.95} fill={textOn(player.color)}>
+        {player.name.slice(0, 1).toUpperCase()}
+      </text>
+    </>
   );
 }

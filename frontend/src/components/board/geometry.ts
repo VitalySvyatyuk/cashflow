@@ -16,7 +16,7 @@ export const RINGS: Record<Track, Ring> = {
 };
 
 export const TOKEN_RADIUS = 14;
-const TOKEN_GAP = 30;
+const TOKEN_GAP = 44;
 const TOKENS_PER_ROW = 3;
 
 export interface Point {
