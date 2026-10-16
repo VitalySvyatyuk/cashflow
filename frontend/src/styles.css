@@ -254,7 +254,8 @@ select {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  vertical-align: middle;
+  /* Центр кружка — на середине заглавных букв (они примерно 0.7em высотой) */
+  vertical-align: calc(0.35em - 6px);
   /* Отступ до имени рядом — пробел в разметке не нужен */
   margin-right: 0.45em;
 }
