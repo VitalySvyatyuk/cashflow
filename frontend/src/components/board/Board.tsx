@@ -23,7 +23,7 @@ import { CELL_ICONS, iconInk, iconTransform, shade } from "./icons";
 // Размер значка на клетке: малый круг шире, большой — 40 узких клеток.
 const ICON_SIZE: Record<Track, number> = { rat_race: 38, fast_track: 30 };
 
-const LANDING_SHOW_MS = 5000;
+const LANDING_SHOW_MS = 10000;
 
 interface Landing {
   key: number;
