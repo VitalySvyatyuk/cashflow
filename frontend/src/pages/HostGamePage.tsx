@@ -10,6 +10,7 @@ import { LendForm, LoanOffers } from "../components/Loans";
 import { Modal } from "../components/Modal";
 import { Dice } from "../components/dice/Dice";
 import { SoundToggle } from "../components/SoundToggle";
+import { ThemePicker } from "../components/ThemePicker";
 import { useGameSounds } from "../lib/useGameSounds";
 import { ConnectionBadge } from "../components/ConnectionBadge";
 import { EventLog } from "../components/EventLog";
@@ -119,6 +120,7 @@ function HostGame({ state }: { state: GameState }) {
           {state.status === "paused" && " · ❄ заморожена"}
         </span>
         <span className="row">
+          <ThemePicker />
           <SoundToggle />
           <ConnectionBadge />
         </span>

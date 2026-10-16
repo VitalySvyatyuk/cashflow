@@ -7,6 +7,7 @@ import { GameCard } from "../components/card/GameCard";
 import { Dice } from "../components/dice/Dice";
 import { DreamPicker } from "../components/DreamPicker";
 import { SoundToggle } from "../components/SoundToggle";
+import { ThemePicker } from "../components/ThemePicker";
 import { useGameSounds } from "../lib/useGameSounds";
 import { ConnectionBadge } from "../components/ConnectionBadge";
 import { EventLog } from "../components/EventLog";
@@ -113,6 +114,7 @@ export function PlayerPage() {
           Ход {view.turn_number}: {current?.name}
         </span>
         <span className="row">
+          <ThemePicker />
           <SoundToggle />
           <ConnectionBadge />
         </span>

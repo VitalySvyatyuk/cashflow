@@ -7,8 +7,9 @@
 }
 
 :root {
-  /* Всё оформлено как игровой стол: поле на светлом сукне, вокруг — тёмное сукно,
-     акценты золотые. Тема одна, от светлой/тёмной темы системы не зависит. */
+  /* Тема по умолчанию — игровой стол: поле на светлом сукне, вокруг — тёмное сукно,
+     акценты золотые. Остальные темы ниже ([data-theme], выбор — lib/theme.ts);
+     от светлой/тёмной темы системы не зависят. */
   --felt: #1f5e46;
   --felt-dark: #0f3324;
   --felt-center: #174a37;
@@ -23,10 +24,70 @@
   --warn: #ef6c00;
   --danger: #c62828;
   --current: #2f3d22;
+  --cell-gap: var(--felt-dark);
   --radius: 10px;
   color-scheme: dark;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   color: var(--text);
+}
+
+:root[data-theme="navy"] {
+  --felt: #1c3a6e;
+  --felt-dark: #0b1a33;
+  --felt-center: #152d55;
+  --felt-gold: #ffd36b;
+  --bg: #08142a;
+  --panel: #0e1e3a;
+  --text: #eaf0fb;
+  --muted: #a3b3d1;
+  --border: #22396a;
+  --accent: #ffd36b;
+  --accent-text: #0b1628;
+  --current: #2b3350;
+}
+:root[data-theme="wine"] {
+  --felt: #6b1f2e;
+  --felt-dark: #2e0b12;
+  --felt-center: #561826;
+  --felt-gold: #f0c987;
+  --bg: #1e080d;
+  --panel: #2a0e15;
+  --text: #f7ecec;
+  --muted: #c7a2a8;
+  --border: #4e1d27;
+  --accent: #e9b949;
+  --accent-text: #2a0e15;
+  --current: #46271a;
+}
+:root[data-theme="graphite"] {
+  --felt: #2a2e34;
+  --felt-dark: #15171a;
+  --felt-center: #24272c;
+  --felt-gold: #e8e6e3;
+  --bg: #17191c;
+  --panel: #22252a;
+  --text: #e8e6e3;
+  --muted: #9aa0a6;
+  --border: #3a3f46;
+  --accent: #2e7d32;
+  --accent-text: #ffffff;
+  --current: #3a3420;
+}
+:root[data-theme="paper"] {
+  --felt: #fbf6ec;
+  --felt-dark: #e9dcc3;
+  --felt-center: #fffaf1;
+  --felt-gold: #2b2620;
+  --cell-gap: #fffaf1;
+  --bg: #f4f1ea;
+  --panel: #ffffff;
+  --text: #1f2328;
+  --muted: #6b7280;
+  --border: #ddd6c8;
+  --accent: #2e7d32;
+  --accent-text: #ffffff;
+  --current: #fff7d6;
+  color-scheme: light;
 }
 
 * {
@@ -523,7 +584,7 @@ ul.plain {
   background: radial-gradient(120% 90% at 50% 45%, var(--felt) 0%, var(--felt-dark) 100%);
 }
 .board .cell {
-  stroke: var(--felt-dark);
+  stroke: var(--cell-gap);
   stroke-width: 3;
 }
 .board .cell-icon {
@@ -534,7 +595,7 @@ ul.plain {
 }
 .board-center {
   fill: var(--felt-center);
-  stroke: rgb(255 255 255 / 0.15);
+  stroke: color-mix(in srgb, var(--felt-gold) 20%, transparent);
   stroke-width: 2;
 }
 .board-center-ring {
@@ -1010,4 +1071,22 @@ button.dream:hover:not(:disabled) {
 .legend-chip .cell-icon {
   width: 17px;
   height: 17px;
+}
+
+/* Выбор темы в шапке */
+.theme-picker {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.theme-swatch {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgb(127 127 127 / 0.5);
+}
+.theme-swatch.active {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
 }
