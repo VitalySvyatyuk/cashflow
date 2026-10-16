@@ -18,7 +18,7 @@ import {
 import { msUntilArrival } from "../../lib/movement";
 import { STEP_MS } from "../../lib/timing";
 import { useTokenSteps, type Spot } from "./useTokenSteps";
-import { CELL_ICONS, iconInk, shade } from "./icons";
+import { CELL_ICONS, iconInk, iconTransform, shade } from "./icons";
 
 // Размер значка на клетке: малый круг шире, большой — 40 узких клеток.
 const ICON_SIZE: Record<Track, number> = { rat_race: 38, fast_track: 30 };
@@ -124,16 +124,13 @@ export function Board({ state, meId, children }: Props) {
             if (!icon || chosenDreams.has(cell.id)) return null;
             const { x, y } = tokenPoint(track, cell.position, board[track].length);
             return (
-              <text
+              <path
                 key={`icon-${cell.id}`}
-                x={x.toFixed(2)}
-                y={y.toFixed(2)}
-                fontSize={ICON_SIZE[track]}
+                d={icon}
+                transform={iconTransform(x, y, ICON_SIZE[track])}
                 fill={iconInk(cell.color)}
                 className="cell-icon"
-              >
-                {icon}
-              </text>
+              />
             );
           }),
         )}
@@ -170,8 +167,10 @@ export function Board({ state, meId, children }: Props) {
 
         <circle cx={CENTER} cy={CENTER} r={RINGS.rat_race.inner - 14} className="board-center" />
         <circle cx={CENTER} cy={CENTER} r={RINGS.rat_race.inner - 34} className="board-center-ring" />
-        {!state.dice.length && !state.current_card && (
-          <text className="board-title">
+        {/* Название видно и во время броска — тогда оно уходит вверх, освобождая место кубикам;
+            прячется только под открытой карточкой. */}
+        {!state.current_card && (
+          <text className={`board-title ${state.dice.length ? "board-title-up" : ""}`}>
             <tspan x={CENTER} y={CENTER - 14}>
               ДЕНЕЖНЫЙ
             </tspan>
@@ -231,7 +230,11 @@ function Legend({ board }: { board: Record<Track, BoardCell[]> }) {
           {[...kinds.values()].map((c) => (
             <li key={c.kind}>
               <span className="legend-chip" style={{ background: c.color, color: iconInk(c.color) }}>
-                {CELL_ICONS[c.kind] && <span className="cell-icon">{CELL_ICONS[c.kind]}</span>}
+                {CELL_ICONS[c.kind] && (
+                  <svg viewBox="0 -960 960 960" className="cell-icon" aria-hidden>
+                    <path d={CELL_ICONS[c.kind]} fill="currentColor" />
+                  </svg>
+                )}
               </span>{" "}
               {c.kind_name}
             </li>
@@ -252,7 +255,7 @@ function Token({ player, me }: { player: PlayerState; me: boolean }) {
         <circle r={r} fill={`url(#token-${player.id})`} />
         <ellipse cx={-r * 0.3} cy={-r * 0.38} rx={r * 0.5} ry={r * 0.3} fill="#fff" opacity={0.45} />
       </g>
-      <text className="token-label" y={1} fontSize={r * 0.95} fill={textOn(player.color)}>
+      <text className="token-label" dy="0.35em" fontSize={r * 0.95} fill={textOn(player.color)}>
         {player.name.slice(0, 1).toUpperCase()}
       </text>
     </>

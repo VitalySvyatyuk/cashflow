@@ -1,11 +1,4 @@
-/* Значки клеток — Material Symbols Rounded, только нужные (Apache 2.0);
-   название в центре поля — Unbounded, кириллица (OFL). Файлы лежат в public/fonts. */
-@font-face {
-  font-family: "Board Icons";
-  font-weight: 500;
-  font-display: block;
-  src: url("/fonts/material-symbols-board.woff2") format("woff2");
-}
+/* Название в центре поля — Unbounded, кириллица (OFL). Файл лежит в public/fonts. */
 @font-face {
   font-family: "Unbounded";
   font-weight: 800;
@@ -533,12 +526,7 @@ ul.plain {
   stroke-width: 3;
 }
 .board .cell-icon {
-  font-family: "Board Icons";
-  font-feature-settings: "liga";
-  text-anchor: middle;
-  dominant-baseline: central;
   pointer-events: none;
-  -webkit-font-smoothing: antialiased;
 }
 .board .cell:hover {
   filter: brightness(1.15);
@@ -562,13 +550,16 @@ ul.plain {
   font-weight: 800;
   letter-spacing: 2px;
   fill: var(--felt-gold);
+  transition: transform 0.4s ease;
+}
+.board-title-up {
+  transform: translateY(-112px);
 }
 .token {
   filter: drop-shadow(0 3px 3px rgb(0 0 0 / 0.45));
 }
 .token-label {
   text-anchor: middle;
-  dominant-baseline: central;
   font-family: "Unbounded", system-ui, sans-serif;
   font-size: 13px;
   font-weight: 800;
@@ -1020,8 +1011,6 @@ button.dream:hover:not(:disabled) {
   place-items: center;
 }
 .legend-chip .cell-icon {
-  font-family: "Board Icons";
-  font-feature-settings: "liga";
-  font-size: 17px;
-  line-height: 1;
+  width: 17px;
+  height: 17px;
 }
