@@ -204,3 +204,11 @@ def test_state_includes_profession_icon(host, seeded):
     profession = build_state(game.id)["players"][0]["profession"]
     assert profession["emoji"]
     assert profession["icon"] is None
+
+
+@pytest.mark.parametrize("kind", [CellKind.DREAM, CellKind.CHARITY])
+def test_admin_opens_fast_track_cell(seeded, admin_client, kind):
+    cell = BoardCell.objects.filter(track=Track.FAST_TRACK, cell_type__kind=kind).first()
+    response = admin_client.get(f"/admin/game/boardcell/{cell.pk}/change/")
+    assert response.status_code == 200
+    assert cell.title in response.content.decode()

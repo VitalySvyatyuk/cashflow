@@ -165,6 +165,8 @@ class BoardCellForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if "cell_type" not in self.fields:  # мечта: все поля только для чтения
+            return
         # Какие параметры показывать для выбранного типа — см. kind_fields.js.
         fields = {str(t.pk): CELL_KIND_FIELDS.get(t.kind, []) for t in CellType.objects.all()}
         widget = self.fields["cell_type"].widget
