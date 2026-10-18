@@ -667,6 +667,69 @@ def test_sell_property_pays_off_mortgage(started, masha, petya):
     assert not Liability.objects.filter(id=mortgage.id).exists()
 
 
+def plex_card(name, units, cost, down, flow):
+    return Card.objects.create(
+        category=category(CardCategory.BIG_DEAL),
+        kind=CardKind.REAL_ESTATE,
+        title=f"{name} на продажу",
+        property_name=name,
+        units=units,
+        cost=cost,
+        down_payment=down,
+        cashflow=flow,
+    )
+
+
+def apartment_buyer(price=25000):
+    return Card.objects.create(
+        category=category(CardCategory.MARKET),
+        kind=CardKind.SELL_OFFER,
+        title="Покупатель многоквартирных домов",
+        property_name="Дуплекс, 4-плекс, 8-плекс",
+        price=price,
+        per_unit=True,
+    )
+
+
+def test_buying_plex_counts_apartments(started, masha):
+    masha.cash = 10000
+    masha.save()
+    open_card(started, plex_card("Дуплекс", 2, 60000, 6000, 300))
+    act(started, masha, "buy")
+    duplex = masha.assets.get()
+    assert duplex.quantity == 2
+    assert duplex.liability.balance == 54000
+
+
+@pytest.mark.parametrize(
+    "name, units, cost, down, gain",
+    [("Дуплекс", 2, 60000, 6000, -4000), ("4-плекс", 4, 80000, 20000, 40000),
+     ("8-плекс", 8, 220000, 40000, 20000)],
+)  # fmt: skip
+def test_apartment_buyer_pays_per_apartment(started, masha, name, units, cost, down, gain):
+    masha.cash = 100000
+    masha.save()
+    open_card(started, plex_card(name, units, cost, down, 300))
+    act(started, masha, "buy")
+    plex = masha.assets.get()
+    open_card(started, apartment_buyer(25000))
+    cash = fresh(masha).cash
+    act(started, masha, "sell", asset_id=plex.id)
+    # 25 000 за каждую квартиру минус остаток ипотеки
+    assert fresh(masha).cash == cash + gain
+    assert not masha.assets.exists()
+
+
+def test_apartment_buyer_ignores_other_property(started, petya):
+    house = Asset.objects.create(
+        player=petya, kind=Asset.Kind.REAL_ESTATE, title="Многоквартирный дом",
+        key="Многоквартирный дом", quantity=1,
+    )  # fmt: skip
+    open_card(started, apartment_buyer())
+    with pytest.raises(GameError, match="Покупатель ищет"):
+        act(started, petya, "sell", asset_id=house.id)
+
+
 def test_sell_wrong_asset_rejected(started, petya):
     house = Asset.objects.create(
         player=petya, kind=Asset.Kind.REAL_ESTATE, title="Дуплекс", key="Дуплекс"

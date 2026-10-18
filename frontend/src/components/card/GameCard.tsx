@@ -15,6 +15,13 @@ interface Effect {
   mortgage?: number;
   cashflow?: number;
   amount?: number;
+  units?: number;
+  per_unit?: boolean;
+}
+
+/** Покупатель может искать несколько объектов: «Дуплекс, 4-плекс, 8-плекс». */
+function offerProperties(effect: Effect): string[] {
+  return (effect.property ?? "").split(",").map((name) => name.trim()).filter(Boolean);
 }
 
 /** Открытая карточка в центре поля: цифры сделки и продажа своих активов. */
@@ -77,6 +84,7 @@ function CardNumbers({ effect }: { effect: Effect }) {
       break;
     case "real_estate":
       rows.push(["Стоимость", money(effect.cost!)]);
+      if (effect.units) rows.push(["Квартир", String(effect.units)]);
       rows.push(["Первый взнос", money(effect.down_payment!)]);
       if (effect.mortgage) rows.push(["Ипотека", money(effect.mortgage)]);
       rows.push(["Денежный поток", `+${money(effect.cashflow!)} / мес`]);
@@ -85,7 +93,10 @@ function CardNumbers({ effect }: { effect: Effect }) {
       rows.push([`Курс ${effect.symbol}`, money(effect.price!)]);
       break;
     case "sell_offer":
-      rows.push([`Предлагают за «${effect.property}»`, money(effect.price!)]);
+      rows.push([
+        effect.per_unit ? `За квартиру в «${effect.property}»` : `Предлагают за «${effect.property}»`,
+        money(effect.price!),
+      ]);
       break;
     case "expense":
       rows.push(["Заплатить", money(effect.amount!)]);
@@ -111,7 +122,8 @@ function SellOptions({ card, me }: { card: Card; me: PlayerState }) {
   if (effect.type === "stock" || effect.type === "stock_price") {
     assets = me.assets.filter((a) => a.kind === "stock" && a.key === effect.symbol);
   } else if (effect.type === "sell_offer") {
-    assets = me.assets.filter((a) => a.kind === "real_estate" && a.key === effect.property);
+    const wanted = offerProperties(effect);
+    assets = me.assets.filter((a) => a.kind === "real_estate" && wanted.includes(a.key));
   }
   if (!assets.length) return null;
 
@@ -122,7 +134,13 @@ function SellOptions({ card, me }: { card: Card; me: PlayerState }) {
         a.kind === "stock" ? (
           <SellStock key={a.id} asset={a} price={effect.price!} />
         ) : (
-          <SellProperty key={a.id} asset={a} me={me} price={effect.price!} />
+          <SellProperty
+            key={a.id}
+            asset={a}
+            me={me}
+            price={effect.price! * (effect.per_unit ? a.quantity : 1)}
+            perUnit={effect.per_unit ? effect.price : undefined}
+          />
         ),
       )}
     </div>
@@ -150,14 +168,25 @@ function SellStock({ asset, price }: { asset: Asset; price: number }) {
   );
 }
 
-function SellProperty({ asset, me, price }: { asset: Asset; me: PlayerState; price: number }) {
+function SellProperty({
+  asset,
+  me,
+  price,
+  perUnit,
+}: {
+  asset: Asset;
+  me: PlayerState;
+  price: number;
+  perUnit?: number;
+}) {
   const action = useGame((s) => s.action);
   const mortgage = me.liabilities.find((l) => l.asset_id === asset.id)?.balance ?? 0;
   const net = price - mortgage;
   return (
     <div className="sell-row">
       <span>
-        «{asset.title}»{mortgage ? ` (ипотека ${money(mortgage)})` : ""} →{" "}
+        «{asset.title}»{perUnit != null ? ` ${asset.quantity} кв. × ${money(perUnit)}` : ""}
+        {mortgage ? ` (ипотека ${money(mortgage)})` : ""} →{" "}
         <b className={net < 0 ? "negative" : ""}>
           {net >= 0 ? "+" : ""}
           {money(net)}

@@ -165,5 +165,6 @@ function Row({ label, value, strong, muted }: { label: string; value: number; st
 }
 
 export function assetLabel(a: Asset): string {
-  return a.kind === "stock" ? `${a.title} × ${a.quantity}` : a.title;
+  if (a.kind === "stock") return `${a.title} × ${a.quantity}`;
+  return a.quantity > 1 ? `${a.title} (${a.quantity} кв.)` : a.title;
 }

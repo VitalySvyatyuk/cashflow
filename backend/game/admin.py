@@ -6,6 +6,7 @@ from django.utils.html import format_html
 
 from game.models import (
     CARD_KIND_FIELDS,
+    CARD_KIND_OPTIONAL_FIELDS,
     CELL_KIND_FIELDS,
     Asset,
     BoardCell,
@@ -91,6 +92,8 @@ class CardForm(forms.ModelForm):
             "mortgage",
             "cashflow",
             "amount",
+            "units",
+            "per_unit",
         ]
         # Какие поля показывать для выбранного типа — см. kind_fields.js.
         widgets = {
@@ -98,7 +101,7 @@ class CardForm(forms.ModelForm):
                 attrs={
                     "data-kind-fields": json.dumps(
                         {
-                            k: f + (["mortgage"] if k == "real_estate" else [])
+                            k: f + CARD_KIND_OPTIONAL_FIELDS.get(k, [])
                             for k, f in CARD_KIND_FIELDS.items()
                         }
                     )
@@ -129,6 +132,8 @@ class CardAdmin(admin.ModelAdmin):
                     "mortgage",
                     "cashflow",
                     "amount",
+                    "units",
+                    "per_unit",
                 ],
             },
         ),

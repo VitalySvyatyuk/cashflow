@@ -81,6 +81,11 @@ CARD_KIND_FIELDS = {
     CardKind.SELL_OFFER: ["property_name", "price"],
     CardKind.EXPENSE: ["amount"],
 }
+# Необязательные поля: показываются в админке и попадают в effect, если заполнены.
+CARD_KIND_OPTIONAL_FIELDS = {
+    CardKind.REAL_ESTATE: ["mortgage", "units"],
+    CardKind.SELL_OFFER: ["per_unit"],
+}
 CARD_KIND_CATEGORIES = {
     CardKind.STOCK: [CardCategory.SMALL_DEAL, CardCategory.BIG_DEAL],
     CardKind.REAL_ESTATE: [CardCategory.SMALL_DEAL, CardCategory.BIG_DEAL],
@@ -126,7 +131,8 @@ class Card(models.Model):
         "объект",
         max_length=100,
         blank=True,
-        help_text="Например, «Дом 3/2». Покупатель с карточки рынка ищет объект с таким же именем.",
+        help_text="Например, «Дом 3/2». Покупатель с карточки рынка ищет объект с таким же именем; "
+        "у покупателя можно перечислить несколько через запятую: «Дуплекс, 4-плекс, 8-плекс».",
     )
     price = models.PositiveIntegerField(
         "цена", null=True, blank=True, help_text="За одну акцию или сколько предлагает покупатель."
@@ -140,6 +146,17 @@ class Card(models.Model):
         "денежный поток в месяц", null=True, blank=True, help_text="Может быть отрицательным."
     )
     amount = models.PositiveIntegerField("сумма к оплате", null=True, blank=True)
+    units = models.PositiveIntegerField(
+        "квартир",
+        null=True,
+        blank=True,
+        help_text="Сколько квартир в объекте: дуплекс — 2, 4-плекс — 4. Пусто — объект не делится.",
+    )
+    per_unit = models.BooleanField(
+        "цена за квартиру",
+        default=False,
+        help_text="Покупатель платит цену за каждую квартиру объекта, а не за объект целиком.",
+    )
 
     class Meta:
         verbose_name = "карточка"
@@ -189,11 +206,11 @@ class Card(models.Model):
     def effect(self):
         """Параметры одним словарём — в таком виде их читают движок и экран."""
         data = {"type": self.kind}
-        for name in CARD_KIND_FIELDS.get(self.kind, []) + (
-            ["mortgage"] if self.kind == CardKind.REAL_ESTATE else []
+        for name in CARD_KIND_FIELDS.get(self.kind, []) + CARD_KIND_OPTIONAL_FIELDS.get(
+            self.kind, []
         ):
             value = getattr(self, name)
-            if value not in (None, ""):
+            if value not in (None, "", False):
                 data[EFFECT_KEYS.get(name, name)] = value
         return data
 

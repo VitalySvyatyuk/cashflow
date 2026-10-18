@@ -691,6 +691,7 @@ def _run_buy(ctx):
             title=effect.get("property", card.title),
             key=effect.get("property", ""),
             description=card.text,
+            quantity=effect.get("units", 1),  # квартир — для покупателя «за квартиру»
             cost=effect.get("cost", 0),
             cashflow=effect.get("cashflow", 0),
             source_card=card,
@@ -722,6 +723,11 @@ def _parse_sell(params):
     }
 
 
+def offer_properties(effect):
+    """Объекты, которые ищет покупатель: можно несколько через запятую."""
+    return {name.strip() for name in effect["property"].split(",") if name.strip()}
+
+
 def _sell_offer(ctx):
     """(актив, выручка до погашения ипотеки, сумма ипотеки) по открытой карточке."""
     card = ctx.game.current_card
@@ -750,10 +756,11 @@ def _sell_offer(ctx):
             raise GameError(f"У вас только {asset.quantity} акций.")
         return asset, effect["price"] * ctx.params["quantity"], 0
     if effect.get("type") == "sell_offer":
-        if asset.kind != Asset.Kind.REAL_ESTATE or asset.key != effect["property"]:
+        if asset.kind != Asset.Kind.REAL_ESTATE or asset.key not in offer_properties(effect):
             raise GameError(f"Покупатель ищет «{effect['property']}».")
         mortgage = asset.liability.balance if hasattr(asset, "liability") else 0
-        return asset, effect["price"], mortgage
+        price = effect["price"] * (asset.quantity if effect.get("per_unit") else 1)
+        return asset, price, mortgage
     raise GameError("По этой карточке ничего продать нельзя.")
 
 
@@ -764,6 +771,8 @@ def _describe_sell(ctx):
         if asset.kind == Asset.Kind.STOCK
         else (f"«{asset.title}»")
     )
+    if ctx.game.current_card.effect.get("per_unit") and asset.kind != Asset.Kind.STOCK:
+        what += f" ({asset.quantity} кв. × {_money(ctx.game.current_card.effect['price'])})"
     tail = f", минус ипотека {_money(mortgage)}" if mortgage else ""
     return f"продать {what} за {_money(price)}{tail}"
 
