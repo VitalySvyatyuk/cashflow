@@ -730,6 +730,53 @@ def test_apartment_buyer_ignores_other_property(started, petya):
         act(started, petya, "sell", asset_id=house.id)
 
 
+def business(player, cashflow=1000, is_business=True, key="Компания"):
+    return Asset.objects.create(
+        player=player, kind=Asset.Kind.REAL_ESTATE, title=key, key=key,
+        cashflow=cashflow, is_business=is_business,
+    )  # fmt: skip
+
+
+def land_on_market(game, player, card):
+    deck = game.decks.get(category=CardCategory.MARKET)
+    deck.card_ids, deck.next_index = [card.id], 0
+    deck.save()
+    place(player, cell_position(CellKind.MARKET) - 1)
+    act(game, player, "roll", rnd=Dice(1))
+
+
+def test_business_boost_raises_every_business_of_every_player(started, masha, petya):
+    mine = business(masha)
+    pizza = business(petya, 5000, key="Франшиза пиццерии")
+    phones = business(petya, 2700, key="Сеть телефонов-автоматов")
+    house = business(petya, 300, is_business=False, key="Дом")
+    boost = Card.objects.create(
+        category=category(CardCategory.MARKET),
+        kind=CardKind.BUSINESS_BOOST,
+        title="Рост бизнеса",
+        cashflow=400,
+    )
+    passive = statement(petya).passive_income
+    land_on_market(started, masha, boost)
+    assert fresh(started).phase == Game.Phase.CARD
+    assert [fresh(a).cashflow for a in (mine, pizza, phones, house)] == [1400, 5400, 3100, 300]
+    assert statement(petya).passive_income == passive + 800
+
+    host(started, "undo")
+    assert fresh(pizza).cashflow == 5000
+
+
+def test_bought_business_card_marks_asset(started, masha):
+    masha.cash = 100000
+    masha.save()
+    card = house_card()
+    card.is_business = True
+    card.save()
+    open_card(started, card)
+    act(started, masha, "buy")
+    assert masha.assets.get().is_business
+
+
 def test_sell_wrong_asset_rejected(started, petya):
     house = Asset.objects.create(
         player=petya, kind=Asset.Kind.REAL_ESTATE, title="Дуплекс", key="Дуплекс"

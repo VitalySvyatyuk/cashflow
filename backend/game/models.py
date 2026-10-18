@@ -70,6 +70,7 @@ class CardKind(models.TextChoices):
     REAL_ESTATE = "real_estate", "Недвижимость или бизнес: можно купить"
     STOCK_PRICE = "stock_price", "Рынок: новый курс акций"
     SELL_OFFER = "sell_offer", "Рынок: покупатель на объект"
+    BUSINESS_BOOST = "business_boost", "Рынок: рост дохода бизнеса"
     EXPENSE = "expense", "Траты: заплатить"
 
 
@@ -79,11 +80,12 @@ CARD_KIND_FIELDS = {
     CardKind.REAL_ESTATE: ["property_name", "cost", "down_payment", "cashflow"],
     CardKind.STOCK_PRICE: ["symbol", "price"],
     CardKind.SELL_OFFER: ["property_name", "price"],
+    CardKind.BUSINESS_BOOST: ["cashflow"],
     CardKind.EXPENSE: ["amount"],
 }
 # Необязательные поля: показываются в админке и попадают в effect, если заполнены.
 CARD_KIND_OPTIONAL_FIELDS = {
-    CardKind.REAL_ESTATE: ["mortgage", "units"],
+    CardKind.REAL_ESTATE: ["mortgage", "units", "is_business"],
     CardKind.SELL_OFFER: ["per_unit"],
 }
 CARD_KIND_CATEGORIES = {
@@ -91,6 +93,7 @@ CARD_KIND_CATEGORIES = {
     CardKind.REAL_ESTATE: [CardCategory.SMALL_DEAL, CardCategory.BIG_DEAL],
     CardKind.STOCK_PRICE: [CardCategory.MARKET],
     CardKind.SELL_OFFER: [CardCategory.MARKET],
+    CardKind.BUSINESS_BOOST: [CardCategory.MARKET],
     CardKind.EXPENSE: [CardCategory.DOODAD],
 }
 # Поле модели → ключ в effect, если они различаются.
@@ -143,7 +146,10 @@ class Card(models.Model):
         "ипотека", null=True, blank=True, help_text="Пусто — стоимость минус первый взнос."
     )
     cashflow = models.IntegerField(
-        "денежный поток в месяц", null=True, blank=True, help_text="Может быть отрицательным."
+        "денежный поток в месяц",
+        null=True,
+        blank=True,
+        help_text="Может быть отрицательным. У роста дохода бизнеса — прибавка каждому бизнесу.",
     )
     amount = models.PositiveIntegerField("сумма к оплате", null=True, blank=True)
     units = models.PositiveIntegerField(
@@ -151,6 +157,11 @@ class Card(models.Model):
         null=True,
         blank=True,
         help_text="Сколько квартир в объекте: дуплекс — 2, 4-плекс — 4. Пусто — объект не делится.",
+    )
+    is_business = models.BooleanField(
+        "бизнес",
+        default=False,
+        help_text="Карточки рынка «рост дохода бизнеса» прибавляют поток каждому такому объекту.",
     )
     per_unit = models.BooleanField(
         "цена за квартиру",
@@ -527,6 +538,8 @@ class Asset(models.Model):
     key = models.CharField("ключ", max_length=100, blank=True, db_index=True)
     description = models.TextField("описание", blank=True)
     quantity = models.PositiveIntegerField("количество", default=1)
+    # Бизнес с крысиных бегов: ему прибавляют поток карточки «рост дохода бизнеса».
+    is_business = models.BooleanField("бизнес", default=False)
     cost = models.PositiveIntegerField("стоимость", default=0)
     cashflow = models.IntegerField("денежный поток в месяц", default=0)
     source_card = models.ForeignKey(

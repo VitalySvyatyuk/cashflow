@@ -9,6 +9,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from django.db import transaction
+from django.db.models import F
 from django.utils import timezone
 
 from game import finance, snapshots
@@ -29,6 +30,7 @@ from game.models import (
     BoardCell,
     Card,
     CardCategory,
+    CardKind,
     CellKind,
     Game,
     Liability,
@@ -404,7 +406,9 @@ def _land(ctx, cell, announce=True):
         case CellKind.OPPORTUNITY:
             _set_phase(game, Game.Phase.CHOOSE_DEAL)
         case CellKind.MARKET:
-            _draw(ctx, CardCategory.MARKET)
+            card = _draw(ctx, CardCategory.MARKET)
+            if card.kind == CardKind.BUSINESS_BOOST:
+                _boost_businesses(game, card.effect.get("cashflow", 0))
             _set_phase(game, Game.Phase.CARD)
         case CellKind.DOODAD:
             # Игрок сам нажимает «Заплатить» — см. _run_pay_card.
@@ -501,6 +505,23 @@ def _draw(ctx, category):
         ctx.rnd.shuffle(deck.card_ids)
         deck.next_index = 0
     raise GameError("Колода пуста.")
+
+
+def _boost_businesses(game, amount):
+    """Рост дохода бизнеса: каждому бизнесу каждого игрока — прибавка к потоку."""
+    for player in game.players.all():
+        businesses = player.assets.filter(is_business=True)
+        count = businesses.count()
+        if not count:
+            continue
+        businesses.update(cashflow=F("cashflow") + amount)
+        log_event(
+            game,
+            "business_boost",
+            player=player,
+            amount=amount * count,
+            text=f"{player.name}: поток бизнеса +{_money(amount)} × {count}",
+        )
 
 
 def _current_cell(ctx):
@@ -692,6 +713,7 @@ def _run_buy(ctx):
             key=effect.get("property", ""),
             description=card.text,
             quantity=effect.get("units", 1),  # квартир — для покупателя «за квартиру»
+            is_business=effect.get("is_business", False),
             cost=effect.get("cost", 0),
             cashflow=effect.get("cashflow", 0),
             source_card=card,

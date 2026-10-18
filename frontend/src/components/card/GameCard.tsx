@@ -98,6 +98,9 @@ function CardNumbers({ effect }: { effect: Effect }) {
         money(effect.price!),
       ]);
       break;
+    case "business_boost":
+      rows.push(["Каждому бизнесу", `+${money(effect.cashflow!)} / мес`]);
+      break;
     case "expense":
       rows.push(["Заплатить", money(effect.amount!)]);
       break;

@@ -210,6 +210,35 @@ def build_plex_cards():
     return cards
 
 
+# Рост дохода бизнеса: прибавка к потоку каждого бизнеса у всех игроков.
+BUSINESS_BOOSTS = [
+    (
+        400,
+        "Крупная компания взялась распространять продукцию вашего бизнеса — продажи выросли "
+        "в 2,5 раза. Хлопот прибавилось, зато чистая прибыль выросла.",
+    ),
+    (
+        250,
+        "Ваш бизнес получил отраслевую награду за инновационный продукт, и продажи удвоились. "
+        "Времени уходит больше, зато чистая прибыль выросла.",
+    ),
+]
+
+
+def build_business_boosts():
+    return [
+        {
+            "category": CardCategory.MARKET,
+            "title": f"Положение мелкого бизнеса улучшается (+{rub(amount)})",
+            "text": f"{text} Касается каждого игрока: поток каждого его бизнеса растёт "
+            f"на {rub(amount)} в месяц.",
+            "kind": CardKind.BUSINESS_BOOST,
+            "cashflow": amount,
+        }
+        for amount, text in BUSINESS_BOOSTS
+    ]
+
+
 def _round(value, step=100):
     return int(round(value / step) * step)
 
@@ -303,7 +332,7 @@ def build_cards(seed=2026):
             }
         )
 
-    return cards + build_plex_cards()
+    return cards + build_plex_cards() + build_business_boosts()
 
 
 def build_categories():

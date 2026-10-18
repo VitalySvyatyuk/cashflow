@@ -93,6 +93,7 @@ class CardForm(forms.ModelForm):
             "cashflow",
             "amount",
             "units",
+            "is_business",
             "per_unit",
         ]
         # Какие поля показывать для выбранного типа — см. kind_fields.js.
@@ -133,6 +134,7 @@ class CardAdmin(admin.ModelAdmin):
                     "cashflow",
                     "amount",
                     "units",
+                    "is_business",
                     "per_unit",
                 ],
             },
