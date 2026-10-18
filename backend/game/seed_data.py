@@ -239,6 +239,40 @@ def build_business_boosts():
     ]
 
 
+# Ущерб: платит только вытянувший, если у него есть такой объект, — один раз.
+DAMAGES = [
+    (
+        "Жилец наносит вред вашей собственности",
+        "Дом, Квартира, Многоквартирный дом, Дуплекс, 4-плекс, 8-плекс",
+        1000,
+        "Жилец потерял работу, перестал платить, а после выселения оказалось, что он испортил "
+        "квартиру. Страховка покрыла почти всё, остальное — из вашего кармана.",
+    ),
+    (
+        "Прорыв канализации",
+        "8-плекс",
+        2000,
+        "Вода заливает все квартиры вашего 8-плекса — нужна новая канализационная труба. "
+        "Если 8-плексов несколько, платите только за один.",
+    ),
+]
+
+
+def build_damage_cards():
+    return [
+        {
+            "category": CardCategory.MARKET,
+            "title": title,
+            "text": f"{text} Платит только тот, кто вытянул карточку; не хватает наличных — "
+            "банк даст кредит.",
+            "kind": CardKind.PROPERTY_DAMAGE,
+            "property_name": properties,
+            "amount": amount,
+        }
+        for title, properties, amount, text in DAMAGES
+    ]
+
+
 def _round(value, step=100):
     return int(round(value / step) * step)
 
@@ -332,7 +366,7 @@ def build_cards(seed=2026):
             }
         )
 
-    return cards + build_plex_cards() + build_business_boosts()
+    return cards + build_plex_cards() + build_business_boosts() + build_damage_cards()
 
 
 def build_categories():

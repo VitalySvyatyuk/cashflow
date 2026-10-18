@@ -71,6 +71,7 @@ class CardKind(models.TextChoices):
     STOCK_PRICE = "stock_price", "Рынок: новый курс акций"
     SELL_OFFER = "sell_offer", "Рынок: покупатель на объект"
     BUSINESS_BOOST = "business_boost", "Рынок: рост дохода бизнеса"
+    PROPERTY_DAMAGE = "property_damage", "Рынок: ущерб собственности"
     EXPENSE = "expense", "Траты: заплатить"
 
 
@@ -81,6 +82,7 @@ CARD_KIND_FIELDS = {
     CardKind.STOCK_PRICE: ["symbol", "price"],
     CardKind.SELL_OFFER: ["property_name", "price"],
     CardKind.BUSINESS_BOOST: ["cashflow"],
+    CardKind.PROPERTY_DAMAGE: ["property_name", "amount"],
     CardKind.EXPENSE: ["amount"],
 }
 # Необязательные поля: показываются в админке и попадают в effect, если заполнены.
@@ -94,6 +96,7 @@ CARD_KIND_CATEGORIES = {
     CardKind.STOCK_PRICE: [CardCategory.MARKET],
     CardKind.SELL_OFFER: [CardCategory.MARKET],
     CardKind.BUSINESS_BOOST: [CardCategory.MARKET],
+    CardKind.PROPERTY_DAMAGE: [CardCategory.MARKET],
     CardKind.EXPENSE: [CardCategory.DOODAD],
 }
 # Поле модели → ключ в effect, если они различаются.
@@ -135,7 +138,8 @@ class Card(models.Model):
         max_length=100,
         blank=True,
         help_text="Например, «Дом 3/2». Покупатель с карточки рынка ищет объект с таким же именем; "
-        "у покупателя можно перечислить несколько через запятую: «Дуплекс, 4-плекс, 8-плекс».",
+        "у покупателя и ущерба можно перечислить несколько через запятую: "
+        "«Дуплекс, 4-плекс, 8-плекс».",
     )
     price = models.PositiveIntegerField(
         "цена", null=True, blank=True, help_text="За одну акцию или сколько предлагает покупатель."

@@ -409,7 +409,14 @@ def _land(ctx, cell, announce=True):
             card = _draw(ctx, CardCategory.MARKET)
             if card.kind == CardKind.BUSINESS_BOOST:
                 _boost_businesses(game, card.effect.get("cashflow", 0))
-            _set_phase(game, Game.Phase.CARD)
+            # Ущерб платит только вытянувший и только если у него есть такой объект — один раз.
+            damaged = (
+                card.kind == CardKind.PROPERTY_DAMAGE
+                and player.assets.filter(
+                    kind=Asset.Kind.REAL_ESTATE, key__in=offer_properties(card.effect)
+                ).exists()
+            )
+            _set_phase(game, Game.Phase.PAY if damaged else Game.Phase.CARD)
         case CellKind.DOODAD:
             # Игрок сам нажимает «Заплатить» — см. _run_pay_card.
             _draw(ctx, CardCategory.DOODAD)
@@ -746,7 +753,7 @@ def _parse_sell(params):
 
 
 def offer_properties(effect):
-    """Объекты, которые ищет покупатель: можно несколько через запятую."""
+    """Объекты, которые ищет покупатель или задевает ущерб: можно несколько через запятую."""
     return {name.strip() for name in effect["property"].split(",") if name.strip()}
 
 
@@ -818,7 +825,7 @@ def _run_sell(ctx):
 
 
 def _run_pay_card(ctx):
-    """Оплата карточки трат. Не хватает наличных — автоматически берётся кредит."""
+    """Оплата карточки трат или ущерба. Не хватает наличных — автоматически берётся кредит."""
     game, player = ctx.game, ctx.player
     card = game.current_card
     amount = card.effect.get("amount", 0)

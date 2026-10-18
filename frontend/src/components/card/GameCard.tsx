@@ -101,6 +101,9 @@ function CardNumbers({ effect }: { effect: Effect }) {
     case "business_boost":
       rows.push(["Каждому бизнесу", `+${money(effect.cashflow!)} / мес`]);
       break;
+    case "property_damage":
+      rows.push([`Заплатить, если есть «${effect.property}»`, money(effect.amount!)]);
+      break;
     case "expense":
       rows.push(["Заплатить", money(effect.amount!)]);
       break;

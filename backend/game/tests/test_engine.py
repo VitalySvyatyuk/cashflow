@@ -777,6 +777,40 @@ def test_bought_business_card_marks_asset(started, masha):
     assert masha.assets.get().is_business
 
 
+def damage_card(properties="Дом, Квартира", amount=1000):
+    return Card.objects.create(
+        category=category(CardCategory.MARKET),
+        kind=CardKind.PROPERTY_DAMAGE,
+        title="Тестовый ущерб",
+        property_name=properties,
+        amount=amount,
+    )
+
+
+def test_damage_paid_once_by_drawer_with_property(started, masha, petya):
+    business(masha, key="Дом")
+    business(masha, key="Квартира")
+    business(petya, key="Дом")
+    masha.cash, petya.cash = 5000, 5000
+    masha.save()
+    petya.save()
+    land_on_market(started, masha, damage_card())
+    assert fresh(started).phase == Game.Phase.PAY
+    act(started, masha, "pay_card")
+    assert fresh(masha).cash == 4000
+    assert fresh(petya).cash == 5000
+    assert fresh(started).phase == Game.Phase.END_TURN
+
+
+def test_damage_skips_drawer_without_property(started, masha):
+    business(masha, key="Дуплекс")
+    cash = fresh(masha).cash
+    land_on_market(started, masha, damage_card("8-плекс", 2000))
+    assert fresh(started).phase == Game.Phase.CARD
+    act(started, masha, "pass")
+    assert fresh(masha).cash == cash
+
+
 def test_sell_wrong_asset_rejected(started, petya):
     house = Asset.objects.create(
         player=petya, kind=Asset.Kind.REAL_ESTATE, title="Дуплекс", key="Дуплекс"
