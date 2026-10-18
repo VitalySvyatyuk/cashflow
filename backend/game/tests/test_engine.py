@@ -671,7 +671,7 @@ def plex_card(name, units, cost, down, flow):
     return Card.objects.create(
         category=category(CardCategory.BIG_DEAL),
         kind=CardKind.REAL_ESTATE,
-        title=f"{name} на продажу",
+        title=f"Тестовый {name}",
         property_name=name,
         units=units,
         cost=cost,
@@ -684,7 +684,7 @@ def apartment_buyer(price=25000):
     return Card.objects.create(
         category=category(CardCategory.MARKET),
         kind=CardKind.SELL_OFFER,
-        title="Покупатель многоквартирных домов",
+        title="Тестовый покупатель квартир",
         property_name="Дуплекс, 4-плекс, 8-плекс",
         price=price,
         per_unit=True,

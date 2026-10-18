@@ -156,6 +156,60 @@ FLAVOR = [
 ]
 
 
+# Плексы считаются по квартирам: покупатель платит за каждую квартиру.
+PLEX_TAIL = "Купите сами или продайте это право другому игроку."
+PLEXES = [
+    # (объект, квартир, стоимость, взнос, поток, текст)
+    (
+        "Дуплекс", 2, 60000, 6000, 300,
+        "Ухоженный дуплекс в хорошем районе: владелец переезжает и продаёт. "
+        f"{PLEX_TAIL} ROI 60 %, можно продать за 50 000–80 000 ₽.",
+    ),
+    (
+        "4-плекс", 4, 80000, 20000, 400,
+        "Новый 4-плекс в растущем районе, прежний владелец не заплатил налоги. "
+        f"{PLEX_TAIL} ROI 24 %, можно продать за 100 000–140 000 ₽.",
+    ),
+    (
+        "8-плекс", 8, 220000, 40000, 1700,
+        "Владелец продаёт 8-плекс по разумной цене, ипотека уже согласована — "
+        f"нужен только первый взнос. {PLEX_TAIL} ROI 51 %, можно продать за 200 000–280 000 ₽.",
+    ),
+]  # fmt: skip
+
+
+def build_plex_cards():
+    cards = [
+        {
+            "category": CardCategory.BIG_DEAL,
+            "title": f"{name} на продажу",
+            "text": text,
+            "kind": CardKind.REAL_ESTATE,
+            "property_name": name,
+            "units": units,
+            "cost": cost,
+            "down_payment": down,
+            "mortgage": cost - down,
+            "cashflow": flow,
+        }
+        for name, units, cost, down, flow, text in PLEXES
+    ]
+    cards.append(
+        {
+            "category": CardCategory.MARKET,
+            "title": "Покупатель многоквартирных домов",
+            "text": "Покупатель платит 25 000 ₽ за каждую квартиру в дуплексах, 4-плексах "
+            "и 8-плексах и сам финансирует сделку. Продать может любой игрок; ипотека "
+            "гасится из выручки, денежный поток объекта пропадает.",
+            "kind": CardKind.SELL_OFFER,
+            "property_name": ", ".join(name for name, *_ in PLEXES),
+            "price": 25000,
+            "per_unit": True,
+        }
+    )
+    return cards
+
+
 def _round(value, step=100):
     return int(round(value / step) * step)
 
@@ -249,7 +303,7 @@ def build_cards(seed=2026):
             }
         )
 
-    return cards
+    return cards + build_plex_cards()
 
 
 def build_categories():
