@@ -170,7 +170,10 @@ def check_invariants(game, track_size):
         for liability in player.liabilities.all():
             assert liability.balance > 0, f"{player}: пустой долг «{liability.title}»"
         s = statement(player)
-        assert s.cashflow == s.total_income - s.total_expenses
+        if player.track == Track.RAT_RACE:
+            assert s.cashflow == s.total_income - s.total_expenses
+        else:  # большой круг: расходов нет, поток — доход Дня денежного потока
+            assert (s.total_expenses, s.cashflow) == (0, player.fast_track_income)
 
 
 # Две партии в обычном прогоне, остальные — в make test-all (каждая ~20 секунд).

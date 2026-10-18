@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import type { PlayerState } from "../../api/types";
-import { money } from "../../lib/format";
+import { FAST_TRACK_WIN_INCOME, money } from "../../lib/format";
 import { useGame } from "../../store/game";
 import { LendForm } from "../Loans";
 import { Modal } from "../Modal";
@@ -53,8 +53,13 @@ export function FinanceSummary({ player }: { player: PlayerState }) {
           )}
         </div>
       ) : (
-        <div className="muted small">
-          Большой круг: {money(player.fast_track_income)} в День денежного потока
+        <div className="exit-progress" title="Общий доход растёт с покупкой бизнесов">
+          <div className="muted small">
+            Победа: общий доход {money(s.total_income)} из {money(FAST_TRACK_WIN_INCOME)}
+          </div>
+          <div className="bar">
+            <div style={{ width: `${Math.min(1, s.total_income / FAST_TRACK_WIN_INCOME) * 100}%` }} />
+          </div>
         </div>
       )}
 

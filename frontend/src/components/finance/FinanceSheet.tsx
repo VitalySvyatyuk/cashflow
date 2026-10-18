@@ -20,7 +20,8 @@ export function FinanceSheet({
   const action = (kind: string, params: Record<string, unknown>) =>
     send(kind, asHost ? { ...params, player_id: player.id } : params);
   const s = player.statement;
-  const prof = player.profession;
+  // В большом круге зарплаты и расходов нет — только бизнесы.
+  const prof = player.track === "rat_race" ? player.profession : null;
   const incomeAssets = player.assets.filter((a) => a.cashflow !== 0);
   const players = useGame((st) => st.view?.players ?? []);
   const name = (id: number | null) => players.find((p) => p.id === id)?.name ?? "игрок";
@@ -30,7 +31,7 @@ export function FinanceSheet({
       <div className="sheet-grid">
         <section>
           <h3>Доходы</h3>
-          <Row label="Зарплата" value={s.salary} />
+          {prof && <Row label="Зарплата" value={s.salary} />}
           {incomeAssets.map((a) => (
             <Row key={a.id} label={assetLabel(a)} value={a.cashflow} muted />
           ))}
@@ -63,7 +64,7 @@ export function FinanceSheet({
       </div>
 
       <div className={`sheet-cashflow ${s.cashflow < 0 ? "negative" : ""}`}>
-        <span>Денежный поток в месяц</span>
+        <span>{prof ? "Денежный поток в месяц" : "Денежный поток в День денежного потока"}</span>
         <b>{money(s.cashflow)}</b>
       </div>
 

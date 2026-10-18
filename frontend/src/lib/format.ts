@@ -1,5 +1,8 @@
 /** Кредиты берутся суммами, кратными этому шагу (как BANK_LOAN_STEP на сервере). */
-export const LOAN_STEP = 10_000;
+export const LOAN_STEP = 1_000;
+
+/** Общий доход большого круга, после которого игрок побеждает (как на сервере). */
+export const FAST_TRACK_WIN_INCOME = 500_000;
 
 /** Сумма в рублях: «25 000 ₽». Игровая валюта — всегда рубль. */
 export function money(n: number): string {

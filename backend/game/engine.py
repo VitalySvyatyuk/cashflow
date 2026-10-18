@@ -49,6 +49,7 @@ HOST = "host"
 CHARITY_TURNS = 3
 DOWNSIZED_SKIP_TURNS = 2
 FAST_TRACK_INCOME_MULTIPLIER = 100
+FAST_TRACK_WIN_INCOME = 500_000  # общий доход большого круга, после которого игрок побеждает
 
 
 @dataclass(frozen=True)
@@ -957,22 +958,24 @@ def _run_buy_business(ctx):
     )
     _close_offer(ctx.game)
     _set_phase(ctx.game, Game.Phase.END_TURN)
+    income = statement(player).total_income
+    if income > FAST_TRACK_WIN_INCOME:
+        _win(ctx.game, player, f"{player.name}: общий доход {_money(income)} — победа!")
+
+
+def _win(game, player, text):
+    game.winner = player
+    game.status = Game.Status.FINISHED
+    game.finished_at = timezone.now()
+    game.save()
+    log_event(game, "game_won", player=player, text=text)
 
 
 def _run_buy_dream(ctx):
     game, player = ctx.game, ctx.player
     cell = _current_cell(ctx)
     pay(player, cell.effect.get("cost", 0), cell.title)
-    game.winner = player
-    game.status = Game.Status.FINISHED
-    game.finished_at = timezone.now()
-    game.save()
-    log_event(
-        game,
-        "game_won",
-        player=player,
-        text=f"{player.name} покупает мечту «{cell.title}» и побеждает!",
-    )
+    _win(game, player, f"{player.name} покупает мечту «{cell.title}» и побеждает!")
 
 
 def _check_buy_dream(ctx):
@@ -1212,8 +1215,15 @@ def _check_fast_track(ctx):
 
 
 def _run_fast_track(ctx):
+    """Мир больших денег: активы и расходы обнуляются, наличные и денежный поток —
+    денежный поток малого круга × 100. Общий доход растёт с покупкой бизнесов."""
     player = ctx.player
-    player.fast_track_income = statement(player).passive_income * FAST_TRACK_INCOME_MULTIPLIER
+    start = statement(player).cashflow * FAST_TRACK_INCOME_MULTIPLIER
+    player.assets.all().delete()
+    player.liabilities.all().delete()
+    player.loans_given.all().delete()
+    player.cash = start
+    player.fast_track_income = start
     player.track = Track.FAST_TRACK
     player.position = 0
     player.charity_turns = 0
@@ -1222,8 +1232,9 @@ def _run_fast_track(ctx):
         ctx.game,
         "fast_track",
         player=player,
-        text=f"{player.name} переходит в большой круг! "
-        f"Доход дня денежного потока: {_money(player.fast_track_income)}",
+        amount=start,
+        text=f"{player.name} выходит в мир больших денег! "
+        f"Наличные и денежный поток: {_money(start)}",
     )
 
 

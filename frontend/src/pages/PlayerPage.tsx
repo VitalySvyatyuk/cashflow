@@ -21,8 +21,9 @@ import { PlayerActions } from "../components/PlayerActions";
 import { PlayerList } from "../components/PlayerList";
 import { ProfessionIcon } from "../components/ProfessionIcon";
 import { Toast } from "../components/Toast";
+import { FAST_TRACK_WIN_INCOME, money } from "../lib/format";
 import { forgetPlayer, isWelcomed, loadPlayer, markWelcomed } from "../lib/storage";
-import { useCurrentPlayer, useGame, useMe } from "../store/game";
+import { onGameEvent, useCurrentPlayer, useGame, useMe } from "../store/game";
 
 const CLOSE_MESSAGES: Record<number, string> = {
   [CLOSE_FORBIDDEN]: "Вход больше недействителен — войдите заново.",
@@ -46,6 +47,15 @@ export function PlayerPage() {
   const role = useGame((s) => s.role);
   const playerId = useGame((s) => s.playerId);
   useGameSounds(role, playerId);
+  // Поздравление с выходом в большой круг — тому, кого перевели.
+  const [bigMoney, setBigMoney] = useState(false);
+  useEffect(
+    () =>
+      onGameEvent((event) => {
+        if (event.kind === "fast_track" && event.player_id === playerId) setBigMoney(true);
+      }),
+    [playerId],
+  );
 
   useEffect(() => {
     if (!saved) return;
@@ -159,6 +169,20 @@ export function PlayerPage() {
             </p>
             <DreamPicker me={me} disabled={paused} />
             {me.dream_id != null && <button onClick={closeWelcome}>Начать</button>}
+          </div>
+        </Modal>
+      )}
+      {bigMoney && (
+        <Modal title="Поздравляю, вы вышли в мир больших денег!" onClose={() => setBigMoney(false)}>
+          <div className="welcome">
+            <p>
+              Все активы и расходы обнулились. Наличные и денежный поток: <b>{money(me.fast_track_income)}</b>.
+            </p>
+            <p>
+              Общий доход растёт с покупкой бизнесов на зелёных клетках. Победа — когда он превысит{" "}
+              {money(FAST_TRACK_WIN_INCOME)}, или когда вы купите свою мечту.
+            </p>
+            <button onClick={() => setBigMoney(false)}>Вперёд!</button>
           </div>
         </Modal>
       )}

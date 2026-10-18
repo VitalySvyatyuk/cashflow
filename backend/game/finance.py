@@ -2,10 +2,10 @@
 
 from dataclasses import asdict, dataclass
 
-from game.models import Liability
+from game.models import Liability, Track
 
 BANK_LOAN_TITLE = "Банковский кредит"
-BANK_LOAN_STEP = 10_000
+BANK_LOAN_STEP = 1_000
 BANK_LOAN_RATE = 0.1  # платёж в месяц от суммы кредита
 MAX_CHILDREN = 3
 
@@ -33,6 +33,17 @@ class Statement:
 
 
 def statement(player):
+    if player.track == Track.FAST_TRACK:
+        # Большой круг: расходов нет, общий доход — бизнесы, купленные здесь,
+        # денежный поток — то, что приходит в День денежного потока.
+        business = sum(a.cashflow for a in player.assets.all())
+        return Statement(
+            salary=0,
+            passive_income=business,
+            total_income=business,
+            total_expenses=0,
+            cashflow=player.fast_track_income,
+        )
     profession = player.profession
     # Проценты по займам другим игрокам — тоже пассивный доход.
     passive = sum(a.cashflow for a in player.assets.all()) + loan_interest(player)

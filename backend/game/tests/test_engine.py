@@ -924,7 +924,7 @@ def test_undo_restores_fast_track_charity(started, masha):
 def test_loans(started, masha):
     cash = masha.cash
     with pytest.raises(GameError, match="кратными"):
-        act(started, masha, "take_loan", amount=15_000)
+        act(started, masha, "take_loan", amount=15_500)
     approve(started, act(started, masha, "take_loan", amount=50_000))
     loan = masha.liabilities.get(title=BANK_LOAN_TITLE)
     assert (loan.balance, loan.payment, fresh(masha).cash) == (50_000, 5000, cash + 50_000)
@@ -1130,11 +1130,15 @@ def test_host_moves_player_to_fast_track(started, masha):
         host(started, "go_fast_track", player_id=masha.id)
 
     make_rich(masha)
-    passive = statement(masha).passive_income
+    cashflow = statement(masha).cashflow
     host(started, "go_fast_track", player_id=masha.id)
     masha.refresh_from_db()
     assert masha.track == Track.FAST_TRACK
-    assert masha.fast_track_income == passive * 100
+    # Мир больших денег: активы и расходы обнулились, наличные = поток = поток × 100.
+    assert masha.cash == masha.fast_track_income == cashflow * 100
+    assert not masha.assets.exists() and not masha.liabilities.exists()
+    s = statement(masha)
+    assert (s.total_income, s.total_expenses, s.cashflow) == (0, 0, cashflow * 100)
     with pytest.raises(GameError, match="уже в большом круге"):
         host(started, "go_fast_track", player_id=masha.id)
 
@@ -1195,6 +1199,23 @@ def test_fast_track_business(started, masha):
     cell = BoardCell.objects.get(track=Track.FAST_TRACK, position=fresh(masha).position)
     act(started, masha, "buy_business")
     assert fresh(masha).fast_track_income == cell.effect["cashflow"]
+
+
+def test_fast_track_income_over_500k_wins(started, masha):
+    place(masha, cell_position(CellKind.BUSINESS, Track.FAST_TRACK) - 1, Track.FAST_TRACK)
+    masha.assets.all().delete()
+    masha.cash = 10_000_000
+    masha.save()
+    act(started, masha, "roll", rnd=Dice(1, 0))
+    cell = BoardCell.objects.get(track=Track.FAST_TRACK, position=fresh(masha).position)
+    flow = cell.effect["cashflow"]
+    Asset.objects.create(
+        player=masha, kind=Asset.Kind.BUSINESS, title="Старый бизнес", cashflow=500_001 - flow
+    )
+    act(started, masha, "buy_business")
+    started.refresh_from_db()
+    assert started.status == Game.Status.FINISHED
+    assert started.winner == masha
 
 
 def test_declined_business_offered_to_fast_track_players(started, masha, petya):
