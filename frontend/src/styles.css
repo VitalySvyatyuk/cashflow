@@ -290,6 +290,7 @@ select {
 }
 .game-layout > footer {
   grid-area: footer;
+  position: relative;
   padding: 12px 16px;
   background: var(--panel);
   border-top: 1px solid var(--border);
@@ -674,10 +675,10 @@ ul.plain {
 .board-loading {
   color: var(--muted);
 }
-/* Что за клетка: поверх левой панели, чтобы не закрывать поле */
+/* Что за клетка: внизу слева, прямо над кнопками действий, — чтобы не закрывать поле */
 .landing {
-  position: fixed;
-  top: 60px;
+  position: absolute;
+  bottom: calc(100% + 10px);
   left: 10px;
   width: 260px;
   z-index: 6;
@@ -691,7 +692,7 @@ ul.plain {
 @keyframes landing-in {
   from {
     opacity: 0;
-    transform: translateY(-8px);
+    transform: translateY(8px);
   }
 }
 .legend {

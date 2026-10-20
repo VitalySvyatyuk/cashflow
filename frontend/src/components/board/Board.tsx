@@ -200,7 +200,7 @@ export function Board({ state, meId, children }: Props) {
 
       <div className="board-middle">{children}</div>
 
-      {/* Поверх левой панели (см. .landing), а не над полем — чтобы не закрывать клетки. */}
+      {/* Над кнопками действий внизу слева (см. .landing), а не над полем — чтобы не закрывать клетки. */}
       {landing &&
         createPortal(
           <div className="landing" key={landing.key} style={{ borderColor: landing.cell.color }}>
@@ -208,7 +208,7 @@ export function Board({ state, meId, children }: Props) {
             <b>{landing.player.name}</b> — {landing.cell.title}
             {landing.cell.description && <div className="muted">{landing.cell.description}</div>}
           </div>,
-          document.body,
+          document.querySelector(".game-layout > footer") ?? document.body,
         )}
 
       <Legend board={board} />
