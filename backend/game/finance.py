@@ -8,6 +8,7 @@ BANK_LOAN_TITLE = "Банковский кредит"
 BANK_LOAN_STEP = 1_000
 BANK_LOAN_RATE = 0.1  # платёж в месяц от суммы кредита
 MAX_CHILDREN = 3
+BABY_GIFTS = [10_000, 25_000, 50_000]  # подарок государства за 1-го, 2-го, 3-го ребёнка
 
 
 def rub(n):

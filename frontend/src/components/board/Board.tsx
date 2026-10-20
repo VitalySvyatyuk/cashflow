@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 import { useBoard } from "../../api/board";
 import type { BoardCell, GameState, PlayerState, Track } from "../../api/types";
@@ -199,13 +200,16 @@ export function Board({ state, meId, children }: Props) {
 
       <div className="board-middle">{children}</div>
 
-      {landing && (
-        <div className="landing" key={landing.key} style={{ borderColor: landing.cell.color }}>
-          <span className="chip" style={{ background: landing.player.color }} />
-          <b>{landing.player.name}</b> — {landing.cell.title}
-          {landing.cell.description && <div className="muted">{landing.cell.description}</div>}
-        </div>
-      )}
+      {/* Поверх левой панели (см. .landing), а не над полем — чтобы не закрывать клетки. */}
+      {landing &&
+        createPortal(
+          <div className="landing" key={landing.key} style={{ borderColor: landing.cell.color }}>
+            <span className="chip" style={{ background: landing.player.color }} />
+            <b>{landing.player.name}</b> — {landing.cell.title}
+            {landing.cell.description && <div className="muted">{landing.cell.description}</div>}
+          </div>,
+          document.body,
+        )}
 
       <Legend board={board} />
     </div>

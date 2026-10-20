@@ -7,7 +7,7 @@ import { preloadSounds, play, type SoundName } from "./sound";
 import { STEP_MS } from "./timing";
 
 // Всё, что связано с деньгами, звенит монетами: поступление и списание — по-разному.
-const MONEY_IN = new Set(["payday", "sold", "loan_taken", "auto_loan", "business_boost"]);
+const MONEY_IN = new Set(["payday", "sold", "loan_taken", "auto_loan", "business_boost", "baby"]);
 const MONEY_OUT = new Set(["paid", "bought", "charity", "downsized", "loan_repaid"]);
 
 /** Звуки игры. Всё, что связано с ходом фишки, звучит, когда фишка дошла. */

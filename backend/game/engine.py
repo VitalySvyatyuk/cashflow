@@ -16,6 +16,7 @@ from game import finance, snapshots
 from game.errors import GameError
 from game.events import log_event
 from game.finance import (
+    BABY_GIFTS,
     BANK_LOAN_RATE,
     BANK_LOAN_STEP,
     BANK_LOAN_TITLE,
@@ -428,12 +429,15 @@ def _land(ctx, cell, announce=True):
             if player.children < MAX_CHILDREN:
                 player.children += 1
                 player.save(update_fields=["children"])
+                gift = BABY_GIFTS[player.children - 1]
+                receive(player, gift)
                 log_event(
                     game,
                     "baby",
                     player=player,
                     children=player.children,
-                    text=f"{player.name}: родился ребёнок!",
+                    amount=gift,
+                    text=f"{player.name}: родился ребёнок! Подарок от государства — {_money(gift)}",
                 )
             _set_phase(game, Game.Phase.END_TURN)
         case CellKind.DOWNSIZED:

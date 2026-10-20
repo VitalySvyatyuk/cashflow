@@ -1,6 +1,7 @@
 # Звуки
 
-Все звуки — Kenney (kenney.nl), лицензия CC0 1.0: можно использовать без указания авторства.
+Звуки — Kenney (kenney.nl), лицензия CC0 1.0: можно использовать без указания авторства.
+Кроме win.mp3: фанфары сгенерированы здесь же через ffmpeg.
 Сконвертированы из OGG в MP3 (для Safari на iPad).
 
 | Файл | Исходник | Набор |
@@ -19,7 +20,7 @@
 | error.mp3 | error_006.ogg | Interface Sounds 1.0 |
 | pause.mp3 | minimize_001.ogg | Interface Sounds 1.0 |
 | resume.mp3 | maximize_001.ogg | Interface Sounds 1.0 |
-| win.mp3 | confirmation_004.ogg | Interface Sounds 1.0 |
+| win.mp3 | фанфары: сгенерированы ffmpeg (аккорд до-мажор, медные гармоники), не Kenney | — |
 
 Источники: https://kenney.nl/assets/casino-audio, https://kenney.nl/assets/interface-sounds,
 https://kenney.nl/assets/rpg-audio

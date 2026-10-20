@@ -140,7 +140,7 @@ export function PlayerPage() {
             <Dice values={state.dice} />
           )}
         </Board>
-        <GameOverBanner state={view} />
+        <GameOverBanner state={view} meId={me.id} />
       </main>
       <aside className="right">
         <PlayerList state={view} meId={me.id} onSelect={setViewing} />

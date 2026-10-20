@@ -230,10 +230,15 @@ def test_doodad_takes_auto_loan_when_broke(started, masha):
     assert started.events.filter(kind="auto_loan").exists()
 
 
-def test_baby(started, masha):
-    place(masha, cell_position(CellKind.BABY) - 1)
+@pytest.mark.parametrize("children, gift", [(0, 10_000), (1, 25_000), (2, 50_000), (3, 0)])
+def test_baby_brings_state_gift(started, masha, children, gift):
+    masha.children = children
+    masha.save()
+    place(fresh(masha), cell_position(CellKind.BABY) - 1)
+    cash = fresh(masha).cash
     act(started, masha, "roll", rnd=Dice(1))
-    assert fresh(masha).children == 1
+    assert fresh(masha).children == min(children + 1, 3)
+    assert fresh(masha).cash == cash + gift
 
 
 def petya_turn(game, petya):
@@ -809,6 +814,12 @@ def test_damage_skips_drawer_without_property(started, masha):
     assert fresh(started).phase == Game.Phase.CARD
     act(started, masha, "pass")
     assert fresh(masha).cash == cash
+
+
+def test_zero_values_stay_in_card_effect(started):
+    card = house_card(cost=0, down=0, flow=0)
+    assert (card.effect["cost"], card.effect["down_payment"], card.effect["cashflow"]) == (0, 0, 0)
+    assert "is_business" not in card.effect
 
 
 def test_sell_wrong_asset_rejected(started, petya):

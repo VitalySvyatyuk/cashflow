@@ -674,23 +674,24 @@ ul.plain {
 .board-loading {
   color: var(--muted);
 }
+/* Что за клетка: поверх левой панели, чтобы не закрывать поле */
 .landing {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  position: fixed;
+  top: 60px;
+  left: 10px;
+  width: 260px;
+  z-index: 6;
   background: var(--panel);
   border: 3px solid;
   border-radius: var(--radius);
   padding: 8px 14px;
-  max-width: 70%;
-  box-shadow: 0 6px 20px rgb(0 0 0 / 0.18);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.35);
   animation: landing-in 0.25s ease-out;
 }
 @keyframes landing-in {
   from {
     opacity: 0;
-    transform: translate(-50%, -8px);
+    transform: translateY(-8px);
   }
 }
 .legend {
@@ -803,6 +804,62 @@ ul.plain {
   top: 24px;
   font-size: 1.5rem;
   font-weight: 700;
+}
+/* Победа: большая табличка на весь экран */
+.victory {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 0.55);
+  animation: victory-fade 0.4s ease-out;
+}
+.victory-box {
+  max-width: min(720px, 90vw);
+  padding: 32px 40px;
+  text-align: center;
+  background: radial-gradient(circle at 50% 30%, var(--felt-center), var(--felt-dark));
+  border: 4px solid;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.5);
+  animation: victory-pop 0.6s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+.victory-cup {
+  font-size: 72px;
+  line-height: 1;
+  animation: victory-bounce 1.2s ease-in-out infinite;
+}
+.victory-title {
+  margin: 16px 0 8px;
+  font-family: "Unbounded", sans-serif;
+  font-weight: 800;
+  font-size: clamp(28px, 4.5vw, 52px);
+  line-height: 1.15;
+  text-transform: uppercase;
+  color: var(--felt-gold);
+  text-shadow: 0 3px 0 rgb(0 0 0 / 0.35);
+}
+.victory-how {
+  margin: 0 0 20px;
+  font-size: 1.1rem;
+  color: var(--text);
+}
+@keyframes victory-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes victory-pop {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+@keyframes victory-bounce {
+  50% {
+    transform: translateY(-10px) rotate(-6deg);
+  }
 }
 
 .actions {
@@ -960,6 +1017,9 @@ ul.plain {
   }
   .game-layout > .board-area {
     padding: 8px;
+  }
+  .landing {
+    width: 220px;
   }
   /* Ведущий: кнопки управления — только значки (подсказка в title) */
   .host-controls .label {

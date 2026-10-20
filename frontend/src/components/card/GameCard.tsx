@@ -155,21 +155,24 @@ function SellOptions({ card, me }: { card: Card; me: PlayerState }) {
 
 function SellStock({ asset, price }: { asset: Asset; price: number }) {
   const action = useGame((s) => s.action);
-  const [quantity, setQuantity] = useState(asset.quantity);
+  const [quantityText, setQuantityText] = useState(String(asset.quantity));
+  const quantity = Math.min(asset.quantity, Number(quantityText) || 0);
   return (
     <div className="sell-row">
       <input
         type="number"
         min={1}
         max={asset.quantity}
-        value={quantity}
-        onChange={(e) => setQuantity(Math.min(asset.quantity, Math.max(1, Number(e.target.value))))}
+        value={quantityText}
+        onChange={(e) => setQuantityText(e.target.value.replace(/\D/g, ""))}
         className="qty"
       />
       <span>
         из {asset.quantity} {asset.key} → <b>+{money(quantity * price)}</b>
       </span>
-      <button onClick={() => action("sell", { asset_id: asset.id, quantity })}>Продать</button>
+      <button disabled={quantity < 1} onClick={() => action("sell", { asset_id: asset.id, quantity })}>
+        Продать
+      </button>
     </div>
   );
 }

@@ -76,11 +76,10 @@ export function FinanceSheet({
             <div key={a.id} className="sheet-row">
               <span>
                 {assetLabel(a)}
-                {a.cashflow !== 0 && <span className="muted"> · {money(a.cashflow)} в месяц</span>}
-                {a.description && <div className="muted small">{a.description}</div>}
+                {a.kind !== "stock" && <span className="muted"> · поток {money(a.cashflow)} в месяц</span>}
               </span>
               <span className="muted">
-                {a.kind === "stock" ? `по ${money(a.cost)}` : money(a.cost)}
+                {a.kind === "stock" ? `по ${money(a.cost)}` : `куплено за ${money(a.cost)}`}
               </span>
             </div>
           ))}

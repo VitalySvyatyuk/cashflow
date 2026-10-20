@@ -225,7 +225,8 @@ class Card(models.Model):
             self.kind, []
         ):
             value = getattr(self, name)
-            if value not in (None, "", False):
+            # 0 — законное значение (бесплатный объект, нулевой поток); False — нет флага.
+            if value not in (None, "") and value is not False:
                 data[EFFECT_KEYS.get(name, name)] = value
         return data
 

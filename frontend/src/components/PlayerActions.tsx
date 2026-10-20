@@ -24,7 +24,9 @@ export function PlayerActions({
   const action = (kind: string, params: Record<string, unknown> = {}) =>
     send(kind, asHost ? { ...params, player_id: me.id } : params);
   const cancel = useGame((s) => s.cancel);
-  const [quantity, setQuantity] = useState(1);
+  // Текстом, чтобы поле можно было стереть целиком и набрать 200, а не только дописать к 1.
+  const [quantityText, setQuantityText] = useState("1");
+  const quantity = Number(quantityText) || 0;
   const [dice, setDice] = useState<number | null>(null);
   const board = useBoard();
   // Клетка бизнеса — там, где стоит игрок, чей ход (бизнес могли предложить другому).
@@ -128,8 +130,8 @@ export function PlayerActions({
                 <input
                   type="number"
                   min={1}
-                  value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
+                  value={quantityText}
+                  onChange={(e) => setQuantityText(e.target.value.replace(/\D/g, ""))}
                   className="qty"
                 />
               </label>,
@@ -138,7 +140,7 @@ export function PlayerActions({
           buttons.push(
             <button
               key="buy"
-              disabled={disabled || price > me.cash}
+              disabled={disabled || price > me.cash || (isStock && quantity < 1)}
               title={price > me.cash ? "Не хватает наличных — возьмите кредит" : undefined}
               onClick={() => action("buy", isStock ? { quantity } : {})}
             >
