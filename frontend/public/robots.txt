@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /cashflow
+Disallow: /api/
+Disallow: /admin/
+Disallow: /host
+Disallow: /play/
+
+Sitemap: https://emelyanova-play.online/sitemap.xml

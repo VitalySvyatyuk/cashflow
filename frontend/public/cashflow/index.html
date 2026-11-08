@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Игра «Денежный поток» онлайн — записаться на финансовую игру</title>
+<meta name="description" content="Финансовая игра «Денежный поток» онлайн с ведущей Натальей Емельяновой. Настольная игра денежный поток в браузере: выберитесь из крысиных бегов и выйдите на скоростную дорожку. Записаться — в Telegram.">
+<meta name="keywords" content="игра денежный поток, записаться на денежный поток, настольная игра денежный поток, денежный поток игра онлайн, финансовая игра денежный поток">
+<link rel="canonical" href="https://emelyanova-play.online/cashflow">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#0b231a">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preload" href="/fonts/unbounded-800-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:site_name" content="Денежный поток — игра онлайн">
+<meta property="og:title" content="Игра «Денежный поток» онлайн — финансовая игра с ведущей">
+<meta property="og:description" content="Настольная игра денежный поток в браузере: до 6 игроков и ведущая. Записывайтесь на игру в Telegram.">
+<meta property="og:url" content="https://emelyanova-play.online/cashflow">
+<meta property="og:image" content="https://emelyanova-play.online/cashflow/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "@id": "https://emelyanova-play.online/cashflow",
+      "url": "https://emelyanova-play.online/cashflow",
+      "name": "Игра «Денежный поток» онлайн — записаться на финансовую игру",
+      "inLanguage": "ru",
+      "about": {"@id": "https://emelyanova-play.online/cashflow#game"}
+    },
+    {
+      "@type": "Game",
+      "@id": "https://emelyanova-play.online/cashflow#game",
+      "name": "Денежный поток",
+      "alternateName": ["игра денежный поток", "денежный поток игра онлайн", "финансовая игра денежный поток"],
+      "description": "Финансовая настольная игра онлайн: игроки выбираются из крысиных бегов, покупают активы и выходят на скоростную дорожку, когда пассивный доход превышает расходы.",
+      "numberOfPlayers": {"@type": "QuantitativeValue", "minValue": 1, "maxValue": 6},
+      "inLanguage": "ru",
+      "image": "https://emelyanova-play.online/cashflow/board.svg",
+      "url": "https://emelyanova-play.online/cashflow"
+    },
+    {
+      "@type": "Person",
+      "name": "Наталья Емельянова",
+      "description": "Ведущая игры «Денежный поток», автор Telegram-канала «Порядок в деньгах»",
+      "sameAs": ["https://t.me/FinEmelianova"]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {"@type": "Question", "name": "Что такое игра «Денежный поток»?",
+         "acceptedAnswer": {"@type": "Answer", "text": "Финансовая настольная игра: у каждого игрока своя профессия, зарплата и расходы. Задача — покупать активы, которые приносят пассивный доход, выбраться из «крысиных бегов» и выйти на скоростную дорожку к своей мечте."}},
+        {"@type": "Question", "name": "Как записаться на «Денежный поток»?",
+         "acceptedAnswer": {"@type": "Answer", "text": "Расписание игр и запись — в Telegram-канале Натальи Емельяновой: https://t.me/FinEmelianova. Перед игрой вы получите код комнаты."}},
+        {"@type": "Question", "name": "Нужно ли что-то скачивать, чтобы играть в «Денежный поток» онлайн?",
+         "acceptedAnswer": {"@type": "Answer", "text": "Нет. Игра работает в браузере на телефоне, планшете или компьютере: открываете сайт, вводите код игры и своё имя."}},
+        {"@type": "Question", "name": "Сколько человек играет?",
+         "acceptedAnswer": {"@type": "Answer", "text": "До шести игроков за одним столом плюс ведущая, которая ведёт партию и разбирает решения игроков."}},
+        {"@type": "Question", "name": "Нужно ли разбираться в финансах?",
+         "acceptedAnswer": {"@type": "Answer", "text": "Нет. Правила объясняются по ходу игры, все расчёты — доходы, расходы, кредиты — ведёт сама игра."}}
+      ]
+    }
+  ]
+}
+</script>
+
+<style>
+@font-face {
+  font-family: "Unbounded";
+  font-weight: 800;
+  font-display: swap;
+  src: url("/fonts/unbounded-800-cyrillic.woff2") format("woff2");
+}
+/* Палитра «Сукно» — тема игры по умолчанию; цвета клеток — как на поле. */
+:root {
+  --felt: #1f5e46;
+  --felt-dark: #0f3324;
+  --felt-center: #174a37;
+  --gold: #f1d58a;
+  --accent: #e8c25e;
+  --accent-text: #1a2a1f;
+  --bg: #0b231a;
+  --panel: #102c21;
+  --text: #eef5ee;
+  --muted: #9dbcaa;
+  --border: #24503e;
+  --radius: 14px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+h1, h2, h3, .display { font-family: "Unbounded", system-ui, sans-serif; font-weight: 800; line-height: 1.2; }
+h1 { font-size: clamp(30px, 5vw, 52px); margin: 0 0 20px; color: var(--gold); }
+h2 { font-size: clamp(24px, 3.4vw, 36px); margin: 0 0 24px; color: var(--gold); }
+h3 { font-size: 18px; margin: 0 0 8px; }
+p { margin: 0 0 14px; }
+a { color: var(--accent); }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+section { padding: 72px 0; }
+.muted { color: var(--muted); }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 15px 26px; border-radius: 999px;
+  background: var(--accent); color: var(--accent-text);
+  font-weight: 700; text-decoration: none; font-size: 17px;
+  box-shadow: 0 6px 20px rgb(232 194 94 / 0.25);
+  transition: transform .15s, box-shadow .15s;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgb(232 194 94 / 0.35); }
+.btn svg { width: 22px; height: 22px; }
+.btn-ghost { background: transparent; color: var(--text); border: 1.5px solid var(--border); box-shadow: none; }
+.btn-ghost:hover { border-color: var(--accent); box-shadow: none; }
+
+/* Шапка */
+header.top {
+  position: sticky; top: 0; z-index: 10;
+  background: rgb(11 35 26 / 0.85); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+header.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+.logo { display: flex; align-items: center; gap: 10px; color: var(--gold); text-decoration: none; font-family: "Unbounded", sans-serif; font-weight: 800; font-size: 15px; letter-spacing: 1px; }
+.logo img { width: 30px; height: 30px; }
+header.top .tg { font-weight: 600; text-decoration: none; display: inline-flex; gap: 8px; align-items: center; }
+header.top .tg svg { width: 20px; height: 20px; }
+
+/* Первый экран — поле на сукне */
+.hero {
+  padding: 56px 0 72px;
+  background: radial-gradient(ellipse at 70% 40%, var(--felt) 0%, var(--felt-dark) 55%, var(--bg) 100%);
+}
+.hero .wrap { display: grid; grid-template-columns: 1.05fr 1fr; gap: 40px; align-items: center; }
+.hero .lead { font-size: 19px; color: #d7e6dc; max-width: 34em; }
+.hero .cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0 22px; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 0; margin: 0; list-style: none; color: var(--muted); font-size: 15px; }
+.facts li::before { content: "● "; color: var(--accent); }
+.board-img { width: 100%; height: auto; display: block; filter: drop-shadow(0 20px 40px rgb(0 0 0 / .45)); animation: spin 240s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .board-img { animation: none; } }
+
+/* Карточки преимуществ */
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+.card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 24px; border-top: 4px solid var(--c, var(--accent));
+}
+.card .ico { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--c); margin-bottom: 14px; }
+.card .ico svg { width: 26px; height: 26px; }
+.card p { color: var(--muted); margin: 0; font-size: 16px; }
+
+/* Две дорожки */
+.tracks { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 8px; }
+.track { border-radius: var(--radius); padding: 26px; background: var(--panel); border: 1px solid var(--border); }
+.track p { margin: 0; }
+.track .ring { display: inline-block; width: 18px; height: 18px; border-radius: 50%; border: 5px solid var(--c); margin-right: 8px; vertical-align: -3px; }
+
+/* Легенда клеток */
+.legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; padding: 0; margin: 0; list-style: none; }
+.legend li { display: flex; gap: 14px; align-items: center; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+.chip { flex: none; width: 46px; height: 46px; border-radius: 10px; display: grid; place-items: center; background: var(--c); }
+.chip svg { width: 26px; height: 26px; }
+.legend b { display: block; }
+.legend span.muted { font-size: 14px; line-height: 1.35; display: block; }
+
+/* Карточка профессии */
+.prof { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+.sheet { background: #fbf6ec; color: #1f2328; border-radius: 16px; padding: 26px 28px; box-shadow: 0 20px 50px rgb(0 0 0 / .4); transform: rotate(-1.5deg); }
+.sheet h3 { font-size: 22px; color: #2b2620; margin-bottom: 14px; }
+.sheet table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.sheet td { padding: 6px 0; border-bottom: 1px dashed #ddd6c8; }
+.sheet td:last-child { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.sheet .sum td { border-bottom: 0; padding-top: 12px; font-size: 17px; }
+.sheet .flow { color: #2e7d32; }
+.sheet .tag { display: inline-block; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; margin-bottom: 4px; }
+
+/* Шаги */
+.steps { counter-reset: s; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; padding: 0; list-style: none; }
+.steps li { counter-increment: s; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; position: relative; }
+.steps li::before { content: counter(s); font-family: "Unbounded", sans-serif; font-weight: 800; font-size: 22px; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-text); margin-bottom: 14px; }
+.steps p { color: var(--muted); margin: 0; font-size: 16px; }
+
+/* Палитры столов */
+.themes { display: flex; flex-wrap: wrap; gap: 22px; padding: 0; margin: 24px 0 0; list-style: none; }
+.themes li { text-align: center; font-size: 14px; color: var(--muted); width: 92px; }
+.themes .disc { width: 76px; height: 76px; margin: 0 auto 8px; border-radius: 50%; background: radial-gradient(circle, var(--f) 0 44%, var(--a) 45% 52%, var(--f) 53%); box-shadow: 0 6px 18px rgb(0 0 0 / .35), inset 0 0 0 2px rgb(255 255 255 / .08); }
+
+/* Вопросы */
+details { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 4px 20px; margin-bottom: 10px; }
+summary { cursor: pointer; font-weight: 700; padding: 14px 0; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; color: var(--accent); font-size: 22px; line-height: 1; }
+details[open] summary::after { content: "−"; }
+details p { color: var(--muted); }
+
+/* Финальный призыв */
+.final { text-align: center; background: radial-gradient(ellipse at center, var(--felt) 0%, var(--felt-dark) 70%); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.final p { max-width: 36em; margin: 0 auto 26px; color: #d7e6dc; }
+.stripe { height: 8px; background: linear-gradient(90deg, #2e7d32 0 12.5%, #f9a825 0 25%, #d81b60 0 37.5%, #1565c0 0 50%, #ef6c00 0 62.5%, #00897b 0 75%, #5e35b1 0 87.5%, #c62828 0); }
+
+footer { padding: 32px 0 44px; color: var(--muted); font-size: 15px; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; }
+
+@media (max-width: 860px) {
+  .hero .wrap, .prof, .tracks { grid-template-columns: 1fr; }
+  .hero .board-wrap { max-width: 440px; margin: 0 auto; order: -1; }
+  section { padding: 56px 0; }
+  header.top .tg span { display: none; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <!-- Значки клеток — те же, что на игровом поле (Material Symbols Rounded, Apache 2.0) -->
+  <symbol id="i-tg" viewBox="0 0 24 24"><path fill="currentColor" d="M21.9 4.6 18.7 19.8c-.2 1.1-.9 1.3-1.8.8l-4.9-3.6-2.4 2.3c-.3.3-.5.5-1 .5l.3-5 9.1-8.2c.4-.4-.1-.6-.6-.2L6.2 13.4l-4.8-1.5c-1-.3-1-1 .2-1.5L20.5 3.1c.9-.3 1.6.2 1.4 1.5Z"/></symbol>
+  <symbol id="i-ruble" viewBox="0 -960 960 960"><path fill="currentColor" d="M280-160v-80h-40q-17 0-28.5-11.5T200-280q0-17 11.5-28.5T240-320h40v-80h-40q-17 0-28.5-11.5T200-440q0-17 11.5-28.5T240-480h40v-320q0-17 11.5-28.5T320-840h220q92 0 156 64t64 156q0 92-64 156t-156 64H360v80h120q17 0 28.5 11.5T520-280q0 17-11.5 28.5T480-240H360v80q0 17-11.5 28.5T320-120q-17 0-28.5-11.5T280-160Zm80-320h180q58 0 99-41t41-99q0-58-41-99t-99-41H360v280Z"/></symbol>
+  <symbol id="i-charity" viewBox="0 -960 960 960"><path fill="currentColor" d="M535-87q11 3 25.5 2.5T585-89l295-111q0-34-24-57t-56-23H526q-3 0-7-.5t-6-1.5l-59-21q-8-3-11-10t-1-15q2-7 10-11t16-1l45 17q4 2 6.5 2.5t7.5.5h105q19 0 33.5-13t14.5-34q0-14-8.5-27T649-412L372-515q-7-2-14-3.5t-14-1.5h-64v361l255 72ZM40-160q0 33 23.5 56.5T120-80q33 0 56.5-23.5T200-160v-280q0-33-23.5-56.5T120-520q-33 0-56.5 23.5T40-440v280Zm570.5-317.5Q596-483 584-494L474-602q-31-30-52.5-66.5T400-748q0-55 38.5-93.5T532-880q32 0 60 13.5t48 36.5q20-23 48-36.5t60-13.5q55 0 93.5 38.5T880-748q0 43-21 79.5T807-602L696-494q-12 11-26.5 16.5T640-472q-15 0-29.5-5.5Z"/></symbol>
+  <symbol id="i-tv" viewBox="0 -960 960 960"><path fill="currentColor" d="M160-200q-33 0-56.5-23.5T80-280v-480q0-33 23.5-56.5T160-840h640q33 0 56.5 23.5T880-760v480q0 33-23.5 56.5T800-200H640v40q0 17-11.5 28.5T600-120H360q-17 0-28.5-11.5T320-160v-40H160Z"/></symbol>
+  <symbol id="i-shop" viewBox="0 -960 960 960"><path fill="currentColor" d="M201-120q-33 0-56.5-23.5T121-200v-318q-23-21-35.5-54t-.5-72l42-136q8-26 28.5-43t47.5-17h556q27 0 47 16.5t29 43.5l42 136q12 39-.5 71T841-518v318q0 33-23.5 56.5T761-120H201Zm368-440q27 0 41-18.5t11-41.5l-22-140h-78v148q0 21 14 36.5t34 15.5Zm-180 0q23 0 37.5-15.5T441-612v-148h-78l-22 140q-4 24 10.5 42t37.5 18Zm-178 0q18 0 31.5-13t16.5-33l22-154h-78l-40 134q-6 20 6.5 43t41.5 23Zm540 0q29 0 42-23t6-43l-42-134h-76l22 154q3 20 16.5 33t31.5 13Z"/></symbol>
+  <symbol id="i-baby" viewBox="0 -960 960 960"><path fill="currentColor" d="M297-97q-17-17-17-43t17-43q17-17 43-17t43 17q17 17 17 43t-17 43q-17 17-43 17t-43-17Zm440 0q-17-17-17-43t17-43q17-17 43-17t43 17q17 17 17 43t-17 43q-17 17-43 17t-43-17ZM540-656 384-844q36-18 78-27t90-9q41 0 79 9t70 27q11 8 13 21.5t-9 22.5L540-656Zm-420-44q-17 0-28.5-11.5T80-740q0-57 39.5-98.5T216-880q30 0 55 14t51 44l428 516q17 20 6.5 43T720-240H480q-83 0-141.5-58.5T280-440v-308l-20-24q-14-17-23.5-22.5T216-800q-24 0-40 18t-16 42q0 17-11.5 28.5T120-700Z"/></symbol>
+  <symbol id="i-workoff" viewBox="0 -960 960 960"><path fill="currentColor" d="M160-120q-33 0-56.5-23.5T80-200v-440q0-33 23.5-56.5T160-720h80v112L56-792q-11-11-11-28t11-28q11-11 28-11t28 11l736 736q11 11 11 28t-11 28q-11 11-28 11t-28-11l-64-64H160Zm720-520v349q0 18-12 29.5T840-250q-8 0-15-3t-13-9L343-731q-11-11-17-25.5t-6-30.5v-13q0-33 23.5-56.5T400-880h160q33 0 56.5 23.5T640-800v80h160q33 0 56.5 23.5T880-640Zm-480-80h160v-80H400v80Z"/></symbol>
+  <symbol id="i-star" viewBox="0 -960 960 960"><path fill="currentColor" d="M480-269 314-169q-11 7-23 6t-21-8q-9-7-14-17.5t-2-23.5l44-189-147-127q-10-9-12.5-20.5T140-571q4-11 12-18t22-9l194-17 75-178q5-12 15.5-18t21.5-6q11 0 21.5 6t15.5 18l75 178 194 17q14 2 22 9t12 18q4 11 1.5 22.5T809-528L662-401l44 189q3 13-2 23.5T690-171q-9 7-21 8t-23-6L480-269Z"/></symbol>
+  <symbol id="i-down" viewBox="0 -960 960 960"><path fill="currentColor" d="M744-320 536-526 433-423q-23 23-57 23t-57-23L108-636q-11-11-11.5-27.5T108-692q11-11 28-11t28 11l212 212 103-103q23-23 57-23t57 23l207 207v-64q0-17 11.5-28.5T840-480q17 0 28.5 11.5T880-440v160q0 17-11.5 28.5T840-240H680q-17 0-28.5-11.5T640-280q0-17 11.5-28.5T680-320h64Z"/></symbol>
+</svg>
+
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="/cashflow"><img src="/favicon.svg" alt="" width="30" height="30">ДЕНЕЖНЫЙ ПОТОК</a>
+    <a class="tg" href="https://t.me/FinEmelianova" target="_blank" rel="noopener"><svg><use href="#i-tg"/></svg><span>Telegram-канал</span></a>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <h1>Игра «Денежный поток» онлайн</h1>
+        <p class="lead">Финансовая игра «Денежный поток» с ведущей Натальей Емельяновой. Получите профессию, зарплату и кредиты, покупайте активы и выбирайтесь из крысиных бегов — туда, где пассивный доход больше расходов.</p>
+        <div class="cta">
+          <a class="btn" href="https://t.me/FinEmelianova" target="_blank" rel="noopener"><svg><use href="#i-tg"/></svg>Записаться на игру</a>
+          <a class="btn btn-ghost" href="#kak-prohodit">Как проходит игра</a>
+        </div>
+        <ul class="facts">
+          <li>до 6 игроков</li>
+          <li>играем в браузере</li>
+          <li>с телефона или компьютера</li>
+          <li>расчёты в рублях</li>
+        </ul>
+      </div>
+      <div class="board-wrap">
+        <img class="board-img" src="/cashflow/board.svg" width="1000" height="1000" alt="Игровое поле настольной игры «Денежный поток»: малый круг крысиных бегов и большой круг скоростной дорожки, фишки игроков">
+      </div>
+    </div>
+  </section>
+
+  <div class="stripe"></div>
+
+  <section id="ob-igre">
+    <div class="wrap">
+      <h2>Настольная игра «Денежный поток» — о чём она</h2>
+      <p>«Денежный поток» — настольная игра о личных финансах. Каждый игрок начинает с карточкой профессии: у него есть зарплата, налоги, ипотека, кредиты и ежедневные траты. Пока жизнь держится только на зарплате, вы бегаете по малому кругу — это и есть «крысиные бега».</p>
+      <p>Чтобы выбраться, нужно собрать <b>пассивный доход</b>: покупать недвижимость, бизнесы и акции, вовремя продавать на рынке, гасить дорогие кредиты и не поддаваться лишним тратам. Как только доход от активов превысит расходы — вы выходите на скоростную дорожку и идёте к своей мечте.</p>
+      <div class="tracks">
+        <div class="track" style="--c:#2e7d32">
+          <h3><span class="ring"></span>Крысиные бега</h3>
+          <p class="muted">Малый круг: зарплата, сделки, рынок, траты, дети и увольнение. Здесь учатся считать денежный поток и отличать активы от пассивов.</p>
+        </div>
+        <div class="track" style="--c:#5e35b1">
+          <h3><span class="ring"></span>Скоростная дорожка</h3>
+          <p class="muted">Большой круг: крупные бизнесы, день денежного потока и мечты. Побеждает тот, кто первым купит свою мечту.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="chto-dast" style="background:var(--felt-dark)">
+    <div class="wrap">
+      <h2>Что даёт финансовая игра «Денежный поток»</h2>
+      <div class="grid">
+        <div class="card" style="--c:#2e7d32">
+          <div class="ico"><svg style="color:#fff"><use href="#i-ruble"/></svg></div>
+          <h3>Видно, куда уходят деньги</h3>
+          <p>Доходы и расходы перед глазами на каждом ходу — становится понятно, почему зарплаты «не хватает».</p>
+        </div>
+        <div class="card" style="--c:#1565c0">
+          <div class="ico"><svg style="color:#fff"><use href="#i-tv"/></svg></div>
+          <h3>Активы и пассивы</h3>
+          <p>На практике разбираетесь, что приносит деньги, а что их забирает — квартира, машина, кредит, бизнес.</p>
+        </div>
+        <div class="card" style="--c:#d81b60">
+          <div class="ico"><svg style="color:#fff"><use href="#i-shop"/></svg></div>
+          <h3>Решения без риска</h3>
+          <p>Пробуете сделки, кредиты и инвестиции на игровых деньгах — ошибки ничего не стоят, а выводы остаются.</p>
+        </div>
+        <div class="card" style="--c:#5e35b1">
+          <div class="ico"><svg style="color:#fff"><use href="#i-star"/></svg></div>
+          <h3>Разбор с ведущей</h3>
+          <p>Наталья Емельянова ведёт партию и помогает перенести выводы из игры на свой реальный бюджет.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="pole">
+    <div class="wrap">
+      <h2>Игровое поле: что значат клетки</h2>
+      <p class="muted">Цвета и значки — как на поле в игре.</p>
+      <ul class="legend">
+        <li><span class="chip" style="--c:#2e7d32"></span><div><b>Возможность</b><span class="muted">Сделки: недвижимость, бизнес, акции</span></div></li>
+        <li><span class="chip" style="--c:#f9a825;color:rgb(30 25 10 / .78)"><svg><use href="#i-ruble"/></svg></span><div><b>Доход</b><span class="muted">Зарплата и денежный поток с активов</span></div></li>
+        <li><span class="chip" style="--c:#1565c0;color:#fff"><svg><use href="#i-tv"/></svg></span><div><b>Рынок</b><span class="muted">Покупатели на ваши активы</span></div></li>
+        <li><span class="chip" style="--c:#d81b60;color:#fff"><svg><use href="#i-shop"/></svg></span><div><b>Траты</b><span class="muted">Покупки, которые не приносят денег</span></div></li>
+        <li><span class="chip" style="--c:#ef6c00;color:#fff"><svg><use href="#i-charity"/></svg></span><div><b>Благотворительность</b><span class="muted">Больше кубиков на следующие 3 хода</span></div></li>
+        <li><span class="chip" style="--c:#8e24aa;color:#fff"><svg><use href="#i-baby"/></svg></span><div><b>Ребёнок</b><span class="muted">Подарок от государства и расходы на детей</span></div></li>
+        <li><span class="chip" style="--c:#424242;color:#fff"><svg><use href="#i-workoff"/></svg></span><div><b>Увольнение</b><span class="muted">Оплата расходов за месяц и пропуск 2 ходов</span></div></li>
+        <li><span class="chip" style="--c:#00897b"></span><div><b>Бизнес</b><span class="muted">Крупные покупки на скоростной дорожке</span></div></li>
+        <li><span class="chip" style="--c:#cefb2d;color:rgb(30 25 10 / .78)"><svg><use href="#i-ruble"/></svg></span><div><b>День денежного потока</b><span class="muted">Доход всех ваших бизнесов</span></div></li>
+        <li><span class="chip" style="--c:#c62828;color:#fff"><svg><use href="#i-down"/></svg></span><div><b>Потеря</b><span class="muted">Налоговая, суд, развод, неудачная инвестиция</span></div></li>
+        <li><span class="chip" style="--c:#5e35b1;color:#fff"><svg><use href="#i-star"/></svg></span><div><b>Мечта</b><span class="muted">Цель игры — купить свою</span></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="professii" style="background:var(--felt-dark)">
+    <div class="wrap prof">
+      <div>
+        <h2>12 профессий — 12 разных стартов</h2>
+        <p>В начале игры каждый получает профессию: от секретаря до врача. У каждой свой доход, свои долги и своя сумма на старте, поэтому стратегия выхода из крысиных бегов у всех разная.</p>
+        <p class="muted">Все суммы — в рублях. Расчёты ведёт сама игра: вы принимаете решения, а не считаете в столбик.</p>
+      </div>
+      <div class="sheet" aria-label="Пример карточки профессии">
+        <span class="tag">Карточка профессии</span>
+        <h3>Секретарь</h3>
+        <table>
+          <tr><td>Зарплата</td><td>25 000 ₽</td></tr>
+          <tr><td>Налоги</td><td>−4 600 ₽</td></tr>
+          <tr><td>Ипотека</td><td>−4 000 ₽</td></tr>
+          <tr><td>Кредиты</td><td>−1 900 ₽</td></tr>
+          <tr><td>Прочие расходы</td><td>−5 700 ₽</td></tr>
+          <tr class="sum"><td><b>Денежный поток</b></td><td class="flow">8 800 ₽</td></tr>
+          <tr><td>Наличные на старте</td><td>15 900 ₽</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="kak-prohodit">
+    <div class="wrap">
+      <h2>Как проходит игра «Денежный поток» онлайн</h2>
+      <ol class="steps">
+        <li><h3>Запишитесь</h3><p>Расписание и запись — в <a href="https://t.me/FinEmelianova" target="_blank" rel="noopener">Telegram-канале</a>.</p></li>
+        <li><h3>Получите код</h3><p>Перед началом ведущая присылает четырёхзначный код игры.</p></li>
+        <li><h3>Войдите в игру</h3><p>Откройте сайт с телефона или компьютера, введите код и имя — ничего скачивать не нужно.</p></li>
+        <li><h3>Играйте</h3><p>Бросайте кубик, заключайте сделки и выбирайте мечту. Ведущая ведёт партию и разбирает решения.</p></li>
+      </ol>
+      <h3 style="margin-top:44px">Свой игровой стол</h3>
+      <p class="muted">Цвет стола каждый игрок выбирает для себя — палитры прямо из игры:</p>
+      <ul class="themes">
+        <li><div class="disc" style="--f:#1f5e46;--a:#e8c25e"></div>Сукно</li>
+        <li><div class="disc" style="--f:#1c3a6e;--a:#ffd36b"></div>Ночной синий</li>
+        <li><div class="disc" style="--f:#6b1f2e;--a:#e9b949"></div>Бордо</li>
+        <li><div class="disc" style="--f:#6b4a2e;--a:#e9b949"></div>Коричневая</li>
+        <li><div class="disc" style="--f:#2a2e34;--a:#43a047"></div>Графит</li>
+        <li><div class="disc" style="--f:#c4c9cf;--a:#3d4a5c"></div>Серая</li>
+        <li><div class="disc" style="--f:#f4ead6;--a:#2e7d32"></div>Светлая</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="voprosy" style="background:var(--felt-dark)">
+    <div class="wrap" style="max-width:820px">
+      <h2>Вопросы</h2>
+      <details open>
+        <summary>Как записаться на «Денежный поток»?</summary>
+        <p>Расписание ближайших игр и запись — в Telegram-канале Натальи Емельяновой <a href="https://t.me/FinEmelianova" target="_blank" rel="noopener">«Порядок в деньгах»</a>. Перед игрой вы получите код комнаты.</p>
+      </details>
+      <details>
+        <summary>Нужно ли что-то скачивать?</summary>
+        <p>Нет. Денежный поток — игра онлайн в браузере: подойдёт телефон, планшет или компьютер.</p>
+      </details>
+      <details>
+        <summary>Сколько человек играет?</summary>
+        <p>До шести игроков за одним столом плюс ведущая.</p>
+      </details>
+      <details>
+        <summary>Нужно ли разбираться в финансах?</summary>
+        <p>Нет. Правила объясняются по ходу, доходы, расходы и кредиты считает игра. Финансовая игра как раз для того, чтобы разобраться.</p>
+      </details>
+      <details>
+        <summary>Чем онлайн-версия отличается от настольной игры?</summary>
+        <p>Правила те же, что у настольной игры «Денежный поток»: малый и большой круг, карточки сделок, рынок, кредиты. Только вместо бумажных листов учёта — автоматический подсчёт, а вместо стола — экран.</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="final">
+    <div class="wrap">
+      <h2>Сыграем в «Денежный поток»?</h2>
+      <p>Подпишитесь на канал «Порядок в деньгах» — там анонсы игр, запись и материалы о личных финансах.</p>
+      <a class="btn" href="https://t.me/FinEmelianova" target="_blank" rel="noopener"><svg><use href="#i-tg"/></svg>Записаться в Telegram</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© Наталья Емельянова · «Денежный поток» — финансовая игра онлайн</span>
+    <span><a href="https://t.me/FinEmelianova" target="_blank" rel="noopener">t.me/FinEmelianova</a> · <a href="/">Вход в игру по коду</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

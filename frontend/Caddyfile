@@ -19,10 +19,14 @@
 		file_server
 	}
 
+	# Лендинг — статическая страница (public/cashflow/index.html), чтобы поисковики видели текст без JS.
+	# Один адрес без слэша на конце.
+	redir /cashflow/ /cashflow permanent
+
 	# Фронтенд: все остальные пути отдают index.html (маршрутизация в браузере)
 	handle {
 		root * /srv/app
-		try_files {path} /index.html
+		try_files {path} {path}/index.html /index.html
 		file_server
 		@assets path /assets/*
 		header @assets Cache-Control "public, max-age=31536000, immutable"
