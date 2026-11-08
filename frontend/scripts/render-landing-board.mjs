@@ -1,7 +1,7 @@
 // Рисует игровое поле для лендинга (public/cashflow/board.svg) — те же кольца, цвета клеток
 // и значки, что в игре (components/board), плюс несколько фишек. Клетки берутся из API.
 //
-//   node scripts/render-landing-board.mjs [https://emelyanova-play.online]
+//   node scripts/render-landing-board.mjs [https://emelyanova-play.ru]
 //
 // Шрифт названия вшит в SVG: картинка в <img> не может подгрузить внешний шрифт.
 
@@ -10,7 +10,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const origin = process.argv[2] ?? "https://emelyanova-play.online";
+const origin = process.argv[2] ?? "https://emelyanova-play.ru";
 
 // Значки и геометрия — копия icons.ts / geometry.ts (TypeScript отсюда не импортировать).
 const iconsSrc = readFileSync(join(root, "src/components/board/icons.ts"), "utf8");

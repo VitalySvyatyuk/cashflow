@@ -5,4 +5,4 @@ Disallow: /admin/
 Disallow: /host
 Disallow: /play/
 
-Sitemap: https://emelyanova-play.online/sitemap.xml
+Sitemap: https://emelyanova-play.ru/sitemap.xml
