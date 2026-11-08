@@ -1,6 +1,7 @@
 # Сервер игры: HTTPS-сертификат Caddy получает и продлевает сам.
-# EXTRA_DOMAINS — другие адреса того же сайта через запятую (можно пусто).
-{$SITE_DOMAIN} {$EXTRA_DOMAINS} {
+# SITE_DOMAIN — единственный основной адрес (для поисковиков), один домен.
+# EXTRA_DOMAINS — другие адреса через пробел (можно пусто): постоянный редирект на SITE_DOMAIN.
+{$SITE_DOMAIN} {
 	encode zstd gzip
 
 	# API, WebSocket и админка — в Django
@@ -39,6 +40,6 @@
 	}
 }
 
-www.{$SITE_DOMAIN} {
+www.{$SITE_DOMAIN} {$EXTRA_DOMAINS} {
 	redir https://{$SITE_DOMAIN}{uri} permanent
 }
