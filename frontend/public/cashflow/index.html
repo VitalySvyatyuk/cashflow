@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Игра «Денежный поток» онлайн — записаться на финансовую игру</title>
-<meta name="description" content="Финансовая игра «Денежный поток» онлайн с ведущей Натальей Емельяновой. Настольная игра денежный поток в браузере: выберитесь из крысиных бегов и выйдите на скоростную дорожку. Записаться — в Telegram.">
+<meta name="description" content="Финансовая игра «Денежный поток» онлайн с ведущей Натальей Емельяновой. Настольная игра денежный поток в браузере: выберитесь из крысиных бегов и выйдите на скоростную дорожку. Участие — 2 000 ₽. Записаться — в Telegram.">
 <meta name="keywords" content="игра денежный поток, записаться на денежный поток, настольная игра денежный поток, денежный поток игра онлайн, финансовая игра денежный поток">
 <link rel="canonical" href="https://emelyanova-play.online/cashflow">
 <meta name="robots" content="index, follow">
@@ -43,6 +43,7 @@
       "name": "Денежный поток",
       "alternateName": ["игра денежный поток", "денежный поток игра онлайн", "финансовая игра денежный поток"],
       "description": "Финансовая настольная игра онлайн: игроки выбираются из крысиных бегов, покупают активы и выходят на скоростную дорожку, когда пассивный доход превышает расходы.",
+      "offers": {"@type": "Offer", "price": "2000", "priceCurrency": "RUB", "url": "https://t.me/FinEmelianova"},
       "numberOfPlayers": {"@type": "QuantitativeValue", "minValue": 1, "maxValue": 6},
       "inLanguage": "ru",
       "image": "https://emelyanova-play.online/cashflow/board.svg",
@@ -63,6 +64,8 @@
          "acceptedAnswer": {"@type": "Answer", "text": "Расписание игр и запись — в Telegram-канале Натальи Емельяновой: https://t.me/FinEmelianova. Перед игрой вы получите код комнаты."}},
         {"@type": "Question", "name": "Нужно ли что-то скачивать, чтобы играть в «Денежный поток» онлайн?",
          "acceptedAnswer": {"@type": "Answer", "text": "Нет. Игра работает в браузере на телефоне, планшете или компьютере: открываете сайт, вводите код игры и своё имя."}},
+        {"@type": "Question", "name": "Сколько стоит игра «Денежный поток»?",
+         "acceptedAnswer": {"@type": "Answer", "text": "Участие в игре с ведущей стоит 2 000 рублей."}},
         {"@type": "Question", "name": "Сколько человек играет?",
          "acceptedAnswer": {"@type": "Answer", "text": "До шести игроков за одним столом плюс ведущая, которая ведёт партию и разбирает решения игроков."}},
         {"@type": "Question", "name": "Нужно ли разбираться в финансах?",
@@ -194,10 +197,10 @@ header.top .tg svg { width: 20px; height: 20px; }
 .steps li::before { content: counter(s); font-family: "Unbounded", sans-serif; font-weight: 800; font-size: 22px; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-text); margin-bottom: 14px; }
 .steps p { color: var(--muted); margin: 0; font-size: 16px; }
 
-/* Палитры столов */
-.themes { display: flex; flex-wrap: wrap; gap: 22px; padding: 0; margin: 24px 0 0; list-style: none; }
-.themes li { text-align: center; font-size: 14px; color: var(--muted); width: 92px; }
-.themes .disc { width: 76px; height: 76px; margin: 0 auto 8px; border-radius: 50%; background: radial-gradient(circle, var(--f) 0 44%, var(--a) 45% 52%, var(--f) 53%); box-shadow: 0 6px 18px rgb(0 0 0 / .35), inset 0 0 0 2px rgb(255 255 255 / .08); }
+/* Цена */
+.price { margin-top: 40px; display: flex; flex-wrap: wrap; align-items: center; gap: 18px 32px; background: var(--panel); border: 1px solid var(--border); border-left: 6px solid var(--accent); border-radius: var(--radius); padding: 26px 28px; }
+.price b { display: block; font-size: 40px; color: var(--gold); line-height: 1.1; }
+.price p { flex: 1 1 260px; margin: 0; color: var(--muted); }
 
 /* Вопросы */
 details { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 4px 20px; margin-bottom: 10px; }
@@ -259,7 +262,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: 
           <li>до 6 игроков</li>
           <li>играем в браузере</li>
           <li>с телефона или компьютера</li>
-          <li>расчёты в рублях</li>
+          <li>участие — 2 000 ₽</li>
         </ul>
       </div>
       <div class="board-wrap">
@@ -368,17 +371,11 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: 
         <li><h3>Войдите в игру</h3><p>Откройте сайт с телефона или компьютера, введите код и имя — ничего скачивать не нужно.</p></li>
         <li><h3>Играйте</h3><p>Бросайте кубик, заключайте сделки и выбирайте мечту. Ведущая ведёт партию и разбирает решения.</p></li>
       </ol>
-      <h3 style="margin-top:44px">Свой игровой стол</h3>
-      <p class="muted">Цвет стола каждый игрок выбирает для себя — палитры прямо из игры:</p>
-      <ul class="themes">
-        <li><div class="disc" style="--f:#1f5e46;--a:#e8c25e"></div>Сукно</li>
-        <li><div class="disc" style="--f:#1c3a6e;--a:#ffd36b"></div>Ночной синий</li>
-        <li><div class="disc" style="--f:#6b1f2e;--a:#e9b949"></div>Бордо</li>
-        <li><div class="disc" style="--f:#6b4a2e;--a:#e9b949"></div>Коричневая</li>
-        <li><div class="disc" style="--f:#2a2e34;--a:#43a047"></div>Графит</li>
-        <li><div class="disc" style="--f:#c4c9cf;--a:#3d4a5c"></div>Серая</li>
-        <li><div class="disc" style="--f:#f4ead6;--a:#2e7d32"></div>Светлая</li>
-      </ul>
+      <div class="price">
+        <div><span class="muted">Стоимость участия</span><b class="display">2 000 ₽</b></div>
+        <p>Одна игра с ведущей: партия и разбор решений. Запись — в Telegram-канале.</p>
+        <a class="btn" href="https://t.me/FinEmelianova" target="_blank" rel="noopener"><svg><use href="#i-tg"/></svg>Записаться</a>
+      </div>
     </div>
   </section>
 
@@ -392,6 +389,10 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: 
       <details>
         <summary>Нужно ли что-то скачивать?</summary>
         <p>Нет. Денежный поток — игра онлайн в браузере: подойдёт телефон, планшет или компьютер.</p>
+      </details>
+      <details>
+        <summary>Сколько стоит игра?</summary>
+        <p>Участие в игре «Денежный поток» с ведущей — 2 000 ₽.</p>
       </details>
       <details>
         <summary>Сколько человек играет?</summary>
@@ -411,7 +412,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: 
   <section class="final">
     <div class="wrap">
       <h2>Сыграем в «Денежный поток»?</h2>
-      <p>Подпишитесь на канал «Порядок в деньгах» — там анонсы игр, запись и материалы о личных финансах.</p>
+      <p>Подпишитесь на канал «Порядок в деньгах» — там анонсы игр, запись и материалы о личных финансах. Участие — 2 000 ₽.</p>
       <a class="btn" href="https://t.me/FinEmelianova" target="_blank" rel="noopener"><svg><use href="#i-tg"/></svg>Записаться в Telegram</a>
     </div>
   </section>
