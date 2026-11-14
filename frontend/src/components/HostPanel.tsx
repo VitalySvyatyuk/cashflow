@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 
 import type { GameState, PendingAction, PlayerState } from "../api/types";
 import { money } from "../lib/format";
@@ -123,21 +124,46 @@ export function HostControls({ state }: { state: GameState }) {
 /** Ведущий переводит игрока в большой круг, когда пассивный доход превысил расходы. */
 export function FastTrackButton({ state, player }: { state: GameState; player: PlayerState }) {
   const action = useGame((s) => s.action);
+  const [confirming, setConfirming] = useState(false);
   if (player.track !== "rat_race" || !player.statement.can_exit_rat_race) return null;
   const midTurn =
     player.id === state.current_player_id && !["roll", "end_turn", "skip"].includes(state.phase);
   return (
-    <button
-      className="ok small-button"
-      disabled={midTurn || state.status === "finished"}
-      title={midTurn ? "Дождитесь конца хода игрока" : "Пассивный доход превысил расходы"}
-      onClick={(e) => {
-        e.stopPropagation();
-        action("go_fast_track", { player_id: player.id });
-      }}
-    >
-      Перевести в большой круг
-    </button>
+    <>
+      <button
+        className="ok small-button"
+        disabled={midTurn || state.status === "finished"}
+        title={midTurn ? "Дождитесь конца хода игрока" : "Пассивный доход превысил расходы"}
+        onClick={(e) => {
+          e.stopPropagation();
+          setConfirming(true);
+        }}
+      >
+        Перевести в большой круг
+      </button>
+      {confirming &&
+        createPortal(
+          // Клики внутри окна не должны открывать финансовый отчёт строки таблицы.
+          <div onClick={(e) => e.stopPropagation()}>
+            <Modal title="Большой круг" onClose={() => setConfirming(false)}>
+              <p>Перевести {player.name} в большой круг?</p>
+              <div className="row">
+                <button
+                  className="ok"
+                  onClick={() => {
+                    action("go_fast_track", { player_id: player.id });
+                    setConfirming(false);
+                  }}
+                >
+                  Да
+                </button>
+                <button onClick={() => setConfirming(false)}>Нет</button>
+              </div>
+            </Modal>
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
 

@@ -17,6 +17,11 @@ def rub(n):
     return f"{sign}{abs(n):,}\u00a0₽".replace(",", "\u00a0")
 
 
+def signed(n):
+    """Сумма со знаком: «+1 000 ₽», «−1 000 ₽» (без двойного «+−»)."""
+    return f"+{rub(n)}" if n >= 0 else rub(n)
+
+
 @dataclass
 class Statement:
     salary: int

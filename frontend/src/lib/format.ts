@@ -10,6 +10,11 @@ export function money(n: number): string {
   return `${sign}${Math.abs(n).toLocaleString("ru-RU")}\u00a0₽`;
 }
 
+/** Сумма со знаком: «+1 000 ₽», «−1 000 ₽» (без двойного «+−»). */
+export function signed(n: number): string {
+  return n >= 0 ? `+${money(n)}` : money(n);
+}
+
 /** Чёрный или белый текст поверх цвета — что лучше читается. */
 export function textOn(hex: string): string {
   const n = parseInt(hex.replace("#", ""), 16);

@@ -357,6 +357,7 @@ select {
 .players li {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 6px 8px;
   border-radius: 6px;
@@ -366,6 +367,31 @@ select {
 }
 .players .name {
   flex: 1;
+}
+/* Полоска «сколько осталось до цели» под строкой игрока */
+.players .goal {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.players .goal .bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  overflow: hidden;
+}
+.players .goal .bar div {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.4s;
+}
+.players .goal .bar div.fast {
+  background: var(--felt-gold);
+}
+.players .goal span {
+  white-space: nowrap;
 }
 .players .turn {
   font-size: 0.75em;

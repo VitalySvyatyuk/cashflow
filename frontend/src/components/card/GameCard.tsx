@@ -2,7 +2,7 @@ import { motion } from "motion/react";
 import { useState } from "react";
 
 import type { Asset, Card, GameState, PlayerState } from "../../api/types";
-import { money } from "../../lib/format";
+import { money, signed } from "../../lib/format";
 import { useGame } from "../../store/game";
 
 interface Effect {
@@ -87,7 +87,7 @@ function CardNumbers({ effect }: { effect: Effect }) {
       if (effect.units) rows.push(["Квартир", String(effect.units)]);
       rows.push(["Первый взнос", money(effect.down_payment!)]);
       if (effect.mortgage) rows.push(["Ипотека", money(effect.mortgage)]);
-      rows.push(["Денежный поток", `+${money(effect.cashflow!)} / мес`]);
+      rows.push(["Денежный поток", `${signed(effect.cashflow!)} в месяц`]);
       break;
     case "stock_price":
       rows.push([`Курс ${effect.symbol}`, money(effect.price!)]);
@@ -99,7 +99,7 @@ function CardNumbers({ effect }: { effect: Effect }) {
       ]);
       break;
     case "business_boost":
-      rows.push(["Каждому бизнесу", `+${money(effect.cashflow!)} / мес`]);
+      rows.push(["Каждому бизнесу", `${signed(effect.cashflow!)} в месяц`]);
       break;
     case "property_damage":
       rows.push([`Заплатить, если есть «${effect.property}»`, money(effect.amount!)]);
@@ -196,10 +196,11 @@ function SellProperty({
       <span>
         «{asset.title}»{perUnit != null ? ` ${asset.quantity} кв. × ${money(perUnit)}` : ""}
         {mortgage ? ` (ипотека ${money(mortgage)})` : ""} →{" "}
-        <b className={net < 0 ? "negative" : ""}>
-          {net >= 0 ? "+" : ""}
-          {money(net)}
-        </b>
+        <b className={net < 0 ? "negative" : ""}>{signed(net)}</b>
+        <span className={`muted small ${asset.cashflow < 0 ? "negative" : ""}`}>
+          {" "}
+          · сейчас приносит {signed(asset.cashflow)} в месяц
+        </span>
       </span>
       <button onClick={() => action("sell", { asset_id: asset.id })}>Продать</button>
     </div>

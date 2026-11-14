@@ -598,9 +598,24 @@ def test_stock_card_waits_for_holders(trio):
     act(started, petya, "sell", asset_id=petya.assets.get().id, quantity=3)
     assert fresh(petya).cash == cash + 90
     assert petya.assets.get().quantity == 7
+    # Акции ещё остались — Петя может продать и их, пока сам не скажет «не продаю».
+    assert fresh(started).stock_waiting == [petya.id]
+    act(started, petya, "decline_sell")
     assert fresh(started).stock_waiting == []
     act(started, masha, "end_turn")
     assert fresh(started).current_player == petya
+
+
+def test_holder_sells_several_lots_of_same_stock(started, masha, petya):
+    first, second = give_stock(petya, 100), give_stock(petya, 100)
+    draw_stock(started, masha, price=300)
+    cash = petya.cash
+    act(started, petya, "sell", asset_id=first.id, quantity=100)
+    assert fresh(started).stock_waiting == [petya.id]
+    act(started, petya, "sell", asset_id=second.id, quantity=100)
+    assert fresh(petya).cash == cash + 60_000
+    assert not petya.assets.exists()
+    assert fresh(started).stock_waiting == []
 
 
 def test_holder_declines_to_sell(started, masha, petya):
@@ -1229,22 +1244,15 @@ def test_fast_track_income_over_500k_wins(started, masha):
     assert started.winner == masha
 
 
-def test_declined_business_offered_to_fast_track_players(started, masha, petya):
-    position = cell_position(CellKind.BUSINESS, Track.FAST_TRACK)
-    place(masha, position, Track.FAST_TRACK)
+def test_declined_business_not_offered_to_other_players(started, masha, petya):
+    place(masha, cell_position(CellKind.BUSINESS, Track.FAST_TRACK), Track.FAST_TRACK)
     place(petya, 0, Track.FAST_TRACK)
-    petya.cash = 10_000_000
-    petya.save()
     started.phase = Game.Phase.BUSINESS
     started.save()
-    cell = BoardCell.objects.get(track=Track.FAST_TRACK, position=position)
-
     act(started, masha, "pass")
-    assert fresh(started).offer_player == petya
-    act(started, petya, "buy_business")
-    assert fresh(petya).fast_track_income == cell.effect["cashflow"]
-    assert petya.assets.get().title == cell.title
-    assert fresh(started).phase == Game.Phase.END_TURN
+    started.refresh_from_db()
+    assert started.offer_player is None
+    assert started.phase == Game.Phase.END_TURN
 
 
 def test_declined_business_not_offered_to_rat_race(started, masha, petya):
@@ -1372,3 +1380,21 @@ def test_deck_rebuilt_after_cards_replaced(started, masha):
     place(masha, cell_position(CellKind.DOODAD) - 1)
     act(started, masha, "roll", rnd=Dice(1))
     assert fresh(started).current_card == new
+
+
+# --- Консультация ----------------------------------------------------------------------
+
+
+def test_consultation_takes_1000_from_player(started, masha, petya):
+    masha.cash, petya.cash = 5_000, 5_000
+    masha.save()
+    petya.save()
+    act(started, petya, "consultation")  # не в свой ход тоже можно
+    assert fresh(petya).cash == 4_000
+    assert fresh(masha).cash == 5_000
+    petya.cash = 999
+    petya.save()
+    with pytest.raises(GameError, match="Не хватает денег"):
+        act(started, petya, "consultation")
+    host(started, "undo")
+    assert fresh(petya).cash == 5_000

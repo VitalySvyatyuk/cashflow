@@ -1,18 +1,22 @@
 import { useState } from "react";
 
 import type { PlayerState } from "../../api/types";
-import { FAST_TRACK_WIN_INCOME, money } from "../../lib/format";
+import { FAST_TRACK_WIN_INCOME, money, signed } from "../../lib/format";
 import { useGame } from "../../store/game";
 import { LendForm } from "../Loans";
 import { Modal } from "../Modal";
 import { ProfessionIcon } from "../ProfessionIcon";
 import { FinanceSheet, assetLabel } from "./FinanceSheet";
 
+/** Цена консультации ведущего (как CONSULTATION_PRICE на сервере). */
+const CONSULTATION_PRICE = 1_000;
+
 /** Левая панель игрока: главное о деньгах и путь к выходу в большой круг. */
 export function FinanceSummary({ player }: { player: PlayerState }) {
   const [open, setOpen] = useState(false);
   const [lending, setLending] = useState(false);
   const view = useGame((s) => s.view);
+  const action = useGame((s) => s.action);
   const others = view?.players.filter((p) => p.id !== player.id) ?? [];
   const canLend = view?.status === "running" && others.length > 0;
   const s = player.statement;
@@ -68,7 +72,7 @@ export function FinanceSummary({ player }: { player: PlayerState }) {
         <ul className="plain">
           {player.assets.map((a) => (
             <li key={a.id}>
-              {assetLabel(a)} <span className="muted">{a.cashflow ? `+${money(a.cashflow)}` : ""}</span>
+              {assetLabel(a)} <span className="muted">{a.cashflow ? signed(a.cashflow) : ""}</span>
             </li>
           ))}
         </ul>
@@ -82,6 +86,16 @@ export function FinanceSummary({ player }: { player: PlayerState }) {
       {canLend && (
         <button className="secondary" onClick={() => setLending(true)}>
           🤝 Дать в долг игроку
+        </button>
+      )}
+      {view?.status === "running" && (
+        <button
+          className="secondary"
+          disabled={player.cash < CONSULTATION_PRICE}
+          title={player.cash < CONSULTATION_PRICE ? "Не хватает наличных" : "Списывается с ваших наличных"}
+          onClick={() => action("consultation")}
+        >
+          💬 Получить консультацию ({money(CONSULTATION_PRICE)})
         </button>
       )}
       {open && (

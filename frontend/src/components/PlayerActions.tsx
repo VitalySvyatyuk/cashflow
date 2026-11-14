@@ -73,10 +73,10 @@ export function PlayerActions({
     const symbol = (card?.effect as { symbol?: string } | undefined)?.symbol;
     buttons.push(
       <span key="stock-note" className="offer-note">
-        Продайте акции {symbol} на карточке или откажитесь:
+        Продайте акции {symbol} на карточке (можно все партии) или оставьте себе:
       </span>,
     );
-    buttons.push(button("Отказаться", "decline_sell"));
+    buttons.push(button("Больше не продаю", "decline_sell"));
   }
   if (offered) {
     const owner = state.players.find((p) => p.id === state.current_player_id);

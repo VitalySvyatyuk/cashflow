@@ -532,7 +532,7 @@ def _boost_businesses(game, amount):
             "business_boost",
             player=player,
             amount=amount * count,
-            text=f"{player.name}: поток бизнеса +{_money(amount)} × {count}",
+            text=f"{player.name}: поток бизнеса {finance.signed(amount)} × {count}",
         )
 
 
@@ -826,7 +826,13 @@ def _run_sell(ctx):
     else:
         asset.delete()  # ипотека удаляется вместе с объектом
     log_event(ctx.game, "sold", player=player, amount=net, text=text)
-    _stop_waiting(ctx.game, player)
+    # Акции могли купить несколькими партиями: пока у игрока остались такие же,
+    # он может продать и их по цене этой карточки.
+    if (
+        asset.kind != Asset.Kind.STOCK
+        or not player.assets.filter(kind=Asset.Kind.STOCK, key=asset.key, quantity__gt=0).exists()
+    ):
+        _stop_waiting(ctx.game, player)
 
 
 def _run_pay_card(ctx):
@@ -874,9 +880,8 @@ def _offer_candidates(ctx):
     по порядку мест начиная со следующего за тем, чей ход. Пусто — сделка не передаётся."""
     game = ctx.game
     card = game.current_card
-    if game.phase == Game.Phase.BUSINESS:
-        track = Track.FAST_TRACK
-    elif (
+    # Бизнес в большом круге по кругу не предлагают: отказался — ход закончен.
+    if (
         game.phase == Game.Phase.CARD
         and card is not None
         and card.category.deck in (CardCategory.SMALL_DEAL, CardCategory.BIG_DEAL)
@@ -958,7 +963,8 @@ def _run_buy_business(ctx):
         "bought",
         player=player,
         amount=cost,
-        text=f"{player.name} покупает «{cell.title}» за {_money(cost)}: +{_money(flow)} в месяц",
+        text=f"{player.name} покупает «{cell.title}» за {_money(cost)}: "
+        f"{finance.signed(flow)} в месяц",
     )
     _close_offer(ctx.game)
     _set_phase(ctx.game, Game.Phase.END_TURN)
@@ -1242,6 +1248,26 @@ def _run_fast_track(ctx):
     )
 
 
+CONSULTATION_PRICE = 1_000
+
+
+def _check_consultation(ctx):
+    _need_cash(ctx.player, CONSULTATION_PRICE)
+
+
+def _run_consultation(ctx):
+    """Консультация ведущего: деньги просто списываются, никому не зачисляются."""
+    ctx.player.cash -= CONSULTATION_PRICE
+    ctx.player.save(update_fields=["cash"])
+    log_event(
+        ctx.game,
+        "consultation",
+        player=ctx.player,
+        amount=CONSULTATION_PRICE,
+        text=f"{ctx.player.name} получает консультацию ведущего ({_money(-CONSULTATION_PRICE)})",
+    )
+
+
 def _run_end_turn(ctx):
     _next_turn(ctx.game)
 
@@ -1419,6 +1445,14 @@ ACTIONS = {
         lambda ctx: f"погасить «{_repay_target(ctx).title}» на {_money(ctx.params['amount'])}",
         # Долг игроку гасят напрямую, без ведущего.
         needs_approval=lambda ctx: _repay_target(ctx).lender_id is None,
+        current_only=False,
+        phase_bound=False,
+    ),
+    "consultation": Action(
+        "Консультация",
+        AUTO,
+        _run_consultation,
+        _check_consultation,
         current_only=False,
         phase_bound=False,
     ),

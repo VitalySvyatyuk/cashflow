@@ -4,6 +4,7 @@ import { Link, Navigate, useParams } from "react-router";
 import { api } from "../api/http";
 import type { GameState } from "../api/types";
 import { Board } from "../components/board/Board";
+import { BusinessCard } from "../components/card/BusinessCard";
 import { GameCard } from "../components/card/GameCard";
 import { FinanceSheet } from "../components/finance/FinanceSheet";
 import { LendForm, LoanOffers } from "../components/Loans";
@@ -168,6 +169,8 @@ function HostGame({ state }: { state: GameState }) {
         <Board state={state} meId={null}>
           {view.current_card ? (
             <GameCard key={view.current_card.id} state={view} me={null} />
+          ) : view.phase === "business" ? (
+            <BusinessCard state={view} />
           ) : (
             <Dice values={state.dice} />
           )}

@@ -1,6 +1,6 @@
 import { useBoard } from "../api/board";
-import type { GameState } from "../api/types";
-import { money } from "../lib/format";
+import type { GameState, PlayerState } from "../api/types";
+import { FAST_TRACK_WIN_INCOME, money } from "../lib/format";
 import { useGame } from "../store/game";
 import { ProfessionIcon } from "./ProfessionIcon";
 
@@ -48,6 +48,7 @@ export function PlayerList({
               уволен(а)
             </span>
           )}
+          {state.status !== "lobby" && <GoalBar player={p} />}
         </li>
       ))}
       {presence && meId != null && (
@@ -57,5 +58,34 @@ export function PlayerList({
         </li>
       )}
     </ul>
+  );
+}
+
+/** Сколько осталось до цели: в малом круге — чтобы пассивный доход превысил расходы,
+ *  в большом — до победы по доходу от бизнесов. Видят все игроки. */
+function GoalBar({ player }: { player: PlayerState }) {
+  const s = player.statement;
+  const rat = player.track === "rat_race";
+  const [have, goal] = rat ? [s.passive_income, s.total_expenses] : [s.total_income, FAST_TRACK_WIN_INCOME];
+  // Пассивный доход должен именно превысить расходы, доход большого круга — 500 000 ₽.
+  const left = rat ? goal - have + 1 : goal - have;
+  const done = rat ? s.can_exit_rat_race : have > goal;
+  const share = goal > 0 ? Math.min(1, Math.max(0, have / goal)) : done ? 1 : 0;
+  return (
+    <div
+      className="goal"
+      title={rat ? "Пассивный доход должен превысить расходы" : `Победа — доход бизнесов больше ${money(goal)} в месяц`}
+    >
+      <div className="bar">
+        <div className={rat ? "" : "fast"} style={{ width: `${share * 100}%` }} />
+      </div>
+      <span className="small muted">
+        {done
+          ? rat
+            ? "можно в большой круг"
+            : "цель достигнута"
+          : `${rat ? "до большого круга" : "до победы"}: ${money(Math.max(left, 0))}`}
+      </span>
+    </div>
   );
 }

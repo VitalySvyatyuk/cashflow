@@ -3,6 +3,7 @@ import { Link, Navigate, useParams } from "react-router";
 
 import { CLOSE_FORBIDDEN, CLOSE_GAME_NOT_FOUND, CLOSE_REMOVED } from "../api/socket";
 import { Board } from "../components/board/Board";
+import { BusinessCard } from "../components/card/BusinessCard";
 import { GameCard } from "../components/card/GameCard";
 import { Dice } from "../components/dice/Dice";
 import { DreamPicker } from "../components/DreamPicker";
@@ -136,6 +137,8 @@ export function PlayerPage() {
         <Board state={state} meId={me.id}>
           {view.current_card ? (
             <GameCard key={view.current_card.id} state={view} me={me} />
+          ) : view.phase === "business" ? (
+            <BusinessCard state={view} />
           ) : (
             <Dice values={state.dice} />
           )}

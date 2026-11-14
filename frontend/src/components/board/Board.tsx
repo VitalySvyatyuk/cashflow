@@ -54,7 +54,8 @@ export function Board({ state, meId, children }: Props) {
       const cell = [...board.rat_race, ...board.fast_track].find(
         (c) => c.id === event.payload.cell_id,
       );
-      if (!player || !cell) return;
+      // Бизнес показывается карточкой в центре поля (BusinessCard), пока игрок не решит.
+      if (!player || !cell || cell.kind === "business") return;
       const wait = msUntilArrival(player.id);
       const show = window.setTimeout(() => setLanding({ key: event.seq, player, cell }), wait);
       const hide = window.setTimeout(
